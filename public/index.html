@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es" class="is-loading">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Experiencia visual interactiva de DESORDEN controlada mediante scroll."
+    />
+    <title>DESORDEN — Scrollytelling</title>
+    <link
+      rel="stylesheet"
+      href="/assets/styles.20260730.css"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="/frames/v1/frame_0001.webp"
+      fetchpriority="high"
+    />
+  </head>
+  <body class="is-loading">
+    <main
+      id="scrollytelling"
+      class="scrollytelling"
+      aria-busy="true"
+    >
+      <div id="preloader" class="preloader">
+        <div id="loading-state" class="loading-state">
+          <p id="loading-percent" class="loading-percent">0%</p>
+          <p id="loading-detail" class="loading-detail">
+            Preparando experiencia
+          </p>
+          <div
+            id="progress-track"
+            class="progress-track"
+            role="progressbar"
+            aria-label="Carga de la secuencia"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <div id="progress-bar" class="progress-bar"></div>
+          </div>
+        </div>
+
+        <div id="error-state" class="error-state" role="alert" hidden>
+          <p id="error-message">
+            No se pudo completar la carga de la secuencia.
+          </p>
+          <button id="retry-button" class="retry-button" type="button">
+            Reintentar
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="scroll-container"
+        class="scroll-container"
+        data-frame-count="97"
+      >
+        <div id="sticky-stage" class="sticky-stage">
+          <div
+            class="depth-layer depth-layer--background"
+            data-depth-layer="background"
+            aria-hidden="true"
+          ></div>
+
+          <canvas
+            id="sequence-canvas"
+            class="sequence-canvas"
+            aria-hidden="true"
+          ></canvas>
+
+          <div
+            class="depth-layer depth-layer--foreground"
+            data-depth-layer="foreground"
+            aria-hidden="true"
+          ></div>
+        </div>
+      </div>
+    </main>
+
+    <noscript>
+      <style>
+        html,
+        body {
+          overflow: auto !important;
+        }
+
+        .preloader {
+          display: none !important;
+        }
+      </style>
+      <p class="noscript-message">
+        Esta experiencia necesita JavaScript para reproducir la secuencia
+        controlada por scroll.
+      </p>
+    </noscript>
+
+    <script>
+      window.__DESORDEN_BOOTED__ = false;
+      window.setTimeout(() => {
+        if (window.__DESORDEN_BOOTED__) return;
+
+        document.documentElement.classList.add("is-loading");
+        document.body.classList.add("is-loading");
+        document.getElementById("loading-state").hidden = true;
+        document.getElementById("error-state").hidden = false;
+        document.getElementById("error-message").textContent =
+          "La aplicación no ha podido iniciarse.";
+        document
+          .getElementById("retry-button")
+          .addEventListener("click", () => window.location.reload());
+      }, 10000);
+    </script>
+    <script
+      defer
+      src="/assets/gsap-3.15.0.min.js"
+    ></script>
+    <script
+      defer
+      src="/assets/ScrollTrigger-3.15.0.min.js"
+    ></script>
+    <script
+      defer
+      src="/assets/frame-manifest.20260729.js"
+    ></script>
+    <script
+      defer
+      src="/assets/app.20260730.worker-v3.js"
+    ></script>
+  </body>
+</html>

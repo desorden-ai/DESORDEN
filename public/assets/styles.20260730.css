@@ -1,0 +1,238 @@
+:root {
+  color-scheme: dark;
+  background: #000000;
+  color: #ffffff;
+  font-family:
+    Arial,
+    Helvetica,
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #000000;
+  color: #ffffff;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+html.is-loading,
+body.is-loading {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.scrollytelling {
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: #000000;
+}
+
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  min-height: 100vh;
+  min-height: 100svh;
+  align-items: center;
+  justify-content: center;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  background: #000000;
+}
+
+.loading-state,
+.error-state {
+  display: flex;
+  width: min(100%, 384px);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loading-percent {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  font-size: 24px;
+  letter-spacing: 0.16em;
+  line-height: 1;
+}
+
+.loading-detail {
+  margin: 0 0 14px;
+  color: #a1a1aa;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.progress-track {
+  width: 192px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #27272a;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 100%;
+  background: #ffffff;
+  transition: width 150ms ease-out;
+}
+
+.error-state p {
+  margin: 0;
+  color: #d4d4d8;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.retry-button {
+  margin-top: 24px;
+  border: 1px solid #ffffff;
+  padding: 12px 20px;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.retry-button:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+.retry-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+}
+
+.scroll-container {
+  position: relative;
+  width: 100vw;
+  height: 350vh;
+  height: 350svh;
+}
+
+.sticky-stage {
+  position: sticky;
+  top: 0;
+  isolation: isolate;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: #000000;
+}
+
+.depth-layer,
+.sequence-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.depth-layer {
+  pointer-events: none;
+}
+
+.depth-layer--background {
+  z-index: 10;
+}
+
+.sequence-canvas {
+  z-index: 20;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  pointer-events: none;
+  user-select: none;
+  mix-blend-mode: screen;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+}
+
+.depth-layer--foreground {
+  z-index: 30;
+}
+
+.noscript-message {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  margin: 0;
+  padding: 32px;
+  place-items: center;
+  background: #000000;
+  color: #ffffff;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar,
+  .retry-button {
+    transition: none;
+  }
+}

@@ -1,0 +1,44 @@
+DESORDEN CLOUDFLARE WORKER — VALIDACIÓN V3 PROGRESSIVE
+======================================================
+
+Fecha de validación: 2026-07-30
+
+RESULTADOS
+----------
+- Archivo JavaScript principal: sintaxis válida.
+- Archivos JSON y JSONC: sintaxis válida.
+- Referencias locales del HTML: 6/6 encontradas.
+- Manifiesto: 97 fotogramas.
+- Archivos reales: 97 fotogramas.
+- Formato y dimensiones: 97 WebP válidos de 1080 x 1920.
+- npm ci: correcto.
+- Wrangler 4.115.0 deploy --dry-run: correcto.
+- Recursos detectados por Wrangler: 109.
+- Prueba automatizada de arranque:
+  - preloader ocultado después de los recursos esenciales;
+  - scroll desbloqueado;
+  - primer fotograma dibujado;
+  - 97 fotogramas solicitados progresivamente;
+  - precarga de fondo completada.
+
+CAMBIOS PRINCIPALES
+-------------------
+- Ya no espera los 97 fotogramas antes de abrir la experiencia.
+- Precarga inicial limitada a 8 recursos esenciales.
+- Descarga restante en segundo plano y bajo demanda.
+- Dos decodificaciones simultáneas como máximo.
+- Caché de 6 bitmaps en móvil y 8 en escritorio.
+- Protección frente a carreras de cancelación y reintento.
+- Recuperación al volver desde la caché de navegación de Safari.
+- Resize móvil estabilizado y viewport basado en svh.
+- Encuadre centrado y modo contain para iPad/escritorio.
+- Watchdog de arranque y recarga recuperable.
+- Nombres nuevos para JavaScript y CSS, evitando caché antigua.
+- Rutas inexistentes con respuesta 404 real.
+
+PUBLICACIÓN PENDIENTE
+---------------------
+El paquete está listo, pero esta validación no representa un despliegue real.
+Debe publicarse sobre el Worker existente "muddy-silence-70da" desde GitHub o
+mediante Wrangler autenticado. Conserva www.desorden.cat conectado a ese Worker
+y la redirección 301 actual de desorden.cat hacia https://www.desorden.cat/.
