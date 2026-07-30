@@ -1,5 +1,6 @@
 {
   "status": "ok",
-  "release": "worker-v4-native-scroll",
-  "frames": 97
+  "release": "worker-v6-final-definitive",
+  "frames": 97,
+  "commit": "deploy-trigger-20260730"
 }
