@@ -1,14 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "desss",
-  "compatibility_date": "2026-07-24",
+  "compatibility_date": "2026-07-30",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "directory": "."
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+    "directory": ".",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "single-page-application"
+  }
 }
