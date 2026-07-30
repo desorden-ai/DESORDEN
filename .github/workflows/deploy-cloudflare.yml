@@ -1,0 +1,41 @@
+name: Deploy DESORDEN to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - DESORDEN
+  workflow_dispatch:
+
+concurrency:
+  group: desorden-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run V4 smoke tests
+        run: npm test
+
+      - name: Deploy Worker and route
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
