@@ -4,14 +4,22 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Experiencia visual interactiva de DESORDEN controlada mediante scroll."
+      content="Experiencia visual interactiva de DESORDEN controlada mediante scroll y gesto táctil."
     />
-    <title>DESORDEN — Scrollytelling</title>
+    <title>DESORDEN.cat — Versión Final Definitiva</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="image"
+      href="/frames/v1/frame_0001.webp"
+      fetchpriority="high"
+    />
     <link
       rel="stylesheet"
       href="/assets/styles.20260730.worker-v4.css"
@@ -21,23 +29,24 @@
       href="/assets/touch-drag.20260730.worker-v5.css"
     />
     <link
-      rel="preload"
-      as="image"
-      href="/frames/v1/frame_0001.webp"
-      fetchpriority="high"
+      rel="stylesheet"
+      href="/assets/final.20260730.worker-v6.css"
     />
   </head>
   <body class="is-loading">
+    <div class="grain-overlay" aria-hidden="true"></div>
+
     <main
       id="scrollytelling"
       class="scrollytelling"
       aria-busy="true"
     >
-      <div id="preloader" class="preloader">
+      <div id="preloader" class="preloader status-card">
         <div id="loading-state" class="loading-state">
+          <h1 class="loading-title">DESORDEN.cat — DEFINITIVO</h1>
           <p id="loading-percent" class="loading-percent">0%</p>
           <p id="loading-detail" class="loading-detail">
-            Preparando experiencia
+            Cargando fotogramas...
           </p>
           <div
             id="progress-track"
@@ -68,23 +77,36 @@
         data-frame-count="97"
       >
         <div id="sticky-stage" class="sticky-stage">
-          <div
-            class="depth-layer depth-layer--background"
-            data-depth-layer="background"
-            aria-hidden="true"
-          ></div>
+          <div class="video-wrapper">
+            <div class="hud-corner hud-top-left" aria-hidden="true"></div>
+            <div class="hud-corner hud-top-right" aria-hidden="true"></div>
+            <div class="hud-corner hud-bottom-right" aria-hidden="true"></div>
 
-          <canvas
-            id="sequence-canvas"
-            class="sequence-canvas"
-            aria-hidden="true"
-          ></canvas>
+            <div class="hud-rec" aria-hidden="true">
+              <span class="hud-rec-dot"></span>
+              RAW
+            </div>
 
-          <div
-            class="depth-layer depth-layer--foreground"
-            data-depth-layer="foreground"
-            aria-hidden="true"
-          ></div>
+            <div class="hud-timecode" aria-hidden="true">
+              FRM: <span id="tc-counter">001</span>/097
+            </div>
+
+            <div id="scale-container" class="scale-container">
+              <canvas
+                id="sequence-canvas"
+                class="sequence-canvas"
+                aria-hidden="true"
+              ></canvas>
+            </div>
+
+            <div class="text-mask-wrapper" aria-hidden="true">
+              <div id="text-mover" class="text-mover">
+                <div id="cinematic-text" class="cinematic-text">
+                  <span class="text-stretch">SI NO TE VEN</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -101,8 +123,7 @@
         }
       </style>
       <p class="noscript-message">
-        Esta experiencia necesita JavaScript para reproducir la secuencia
-        controlada por scroll.
+        Esta experiencia necesita JavaScript para reproducir la secuencia.
       </p>
     </noscript>
 
@@ -133,6 +154,10 @@
     <script
       defer
       src="/assets/touch-drag.20260730.worker-v5.js"
+    ></script>
+    <script
+      defer
+      src="/assets/final.20260730.worker-v6.js"
     ></script>
   </body>
 </html>
