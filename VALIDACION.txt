@@ -1,4 +1,4 @@
-DESORDEN CLOUDFLARE WORKER — VALIDACIÓN V3 PROGRESSIVE
+DESORDEN CLOUDFLARE WORKER — VALIDACIÓN V4 NATIVE SCROLL
 ======================================================
 
 Fecha de validación: 2026-07-30
@@ -13,13 +13,14 @@ RESULTADOS
 - Formato y dimensiones: 97 WebP válidos de 1080 x 1920.
 - npm ci: correcto.
 - Wrangler 4.115.0 deploy --dry-run: correcto.
-- Recursos detectados por Wrangler: 109.
-- Prueba automatizada de arranque:
+- Recursos detectados por Wrangler: 107.
+- Prueba automatizada de arranque y navegación:
   - preloader ocultado después de los recursos esenciales;
   - scroll desbloqueado;
   - primer fotograma dibujado;
-  - 97 fotogramas solicitados progresivamente;
-  - precarga de fondo completada.
+  - salto rápido entre varios fotogramas;
+  - descarte de decodificaciones pendientes obsoletas;
+  - avance y retroceso hasta el fotograma solicitado.
 
 CAMBIOS PRINCIPALES
 -------------------
@@ -35,10 +36,13 @@ CAMBIOS PRINCIPALES
 - Watchdog de arranque y recarga recuperable.
 - Nombres nuevos para JavaScript y CSS, evitando caché antigua.
 - Rutas inexistentes con respuesta 404 real.
+- Control nativo de fotogramas mediante el scroll del navegador.
+- Eliminada la dependencia de GSAP/ScrollTrigger para evitar bloqueos del scroll.
+- Cola de decodificación con prioridad para el fotograma actual.
+- Un único contenedor de scroll raíz compatible con Safari.
 
-PUBLICACIÓN PENDIENTE
----------------------
-El paquete está listo, pero esta validación no representa un despliegue real.
-Debe publicarse sobre el Worker existente "muddy-silence-70da" desde GitHub o
-mediante Wrangler autenticado. Conserva www.desorden.cat conectado a ese Worker
-y la redirección 301 actual de desorden.cat hacia https://www.desorden.cat/.
+PUBLICACIÓN
+-----------
+El repositorio despliega el Worker "final" desde la rama "DESORDEN" mediante
+`npx wrangler deploy`. Conserva www.desorden.cat conectado a ese Worker y la
+redirección 301 de desorden.cat hacia https://www.desorden.cat/.

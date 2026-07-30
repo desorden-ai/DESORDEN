@@ -1,9 +1,9 @@
-DESORDEN SCROLLYTELLING — CLOUDFLARE WORKER + GITHUB — V3
+DESORDEN SCROLLYTELLING — CLOUDFLARE WORKER + GITHUB — V4
 =========================================================
 
 Este paquete está preparado específicamente para el Worker:
 
-muddy-silence-70da.desorden-help-76b.workers.dev
+final.desorden-help-76b.workers.dev
 
 ESTRUCTURA
 ----------
@@ -21,9 +21,9 @@ PUBLICACIÓN DESDE GITHUB
 2. Sube EL CONTENIDO descomprimido a la raíz del repositorio.
    No subas únicamente el archivo ZIP.
 3. En Cloudflare abre:
-   Workers & Pages > muddy-silence-70da > Settings > Builds.
+   Workers & Pages > final > Settings > Builds.
 4. Configura:
-   - Production branch: main
+   - Production branch: DESORDEN
    - Root directory: vacío
    - Build command: vacío
    - Deploy command: npx wrangler deploy
@@ -37,7 +37,7 @@ Cuando el despliegue termine, estas rutas deben abrir correctamente:
 /frames/v1/frame_0001.webp
 /frames/v1/frame_0097.webp
 
-Si /health.json muestra "worker-v3-progressive" pero un fotograma no abre, la
+Si /health.json muestra "worker-v4-native-scroll" pero un fotograma no abre, la
 carpeta public/frames no se ha incluido en el repositorio o el despliegue no
 ha terminado correctamente.
 
@@ -47,6 +47,9 @@ MEJORAS DE ESTA VERSIÓN
 - La entrada solo espera los 8 primeros fotogramas esenciales.
 - Los 89 fotogramas restantes se descargan progresivamente en segundo plano.
 - Cualquier fotograma solicitado antes de tiempo se prioriza automáticamente.
+- Las decodificaciones pendientes obsoletas se descartan al cambiar de objetivo.
+- El scroll es nativo, sin GSAP ni ScrollTrigger.
+- Un único contenedor raíz evita bloqueos de `position: sticky` en Safari.
 - Solo se conservan 6 fotogramas decodificados en móvil y 8 en escritorio.
 - La decodificación está limitada a 2 operaciones simultáneas.
 - Tiempo máximo de espera y error visible con el nombre del archivo.
@@ -59,7 +62,7 @@ DOMINIO
 -------
 La aplicación actual debe conservar:
 
-- www.desorden.cat como dominio personalizado del Worker muddy-silence-70da.
+- www.desorden.cat como dominio personalizado del Worker final.
 - desorden.cat con redirección permanente 301 a https://www.desorden.cat/.
 
 No asocies estos mismos hostnames simultáneamente a otro Worker o proyecto

@@ -14,18 +14,27 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html {
   min-height: 100%;
   margin: 0;
   background: #000000;
   color: #ffffff;
   overflow-x: hidden;
-  overscroll-behavior-y: none;
+  overflow-x: clip;
+  overflow-y: auto;
+  touch-action: pan-y;
 }
 
-html.is-loading,
-body.is-loading {
+body {
+  min-height: 100%;
+  margin: 0;
+  overflow: visible;
+  background: #000000;
+  color: #ffffff;
+  touch-action: pan-y;
+}
+
+html.is-loading {
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -173,6 +182,7 @@ select {
   width: 100vw;
   height: 350vh;
   height: 350svh;
+  touch-action: pan-y;
 }
 
 .sticky-stage {
@@ -184,6 +194,7 @@ select {
   height: 100svh;
   overflow: hidden;
   background: #000000;
+  touch-action: pan-y;
 }
 
 .depth-layer,

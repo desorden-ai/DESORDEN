@@ -35,10 +35,9 @@
     ? 6
     : 8;
   const MAX_DEVICE_PIXEL_RATIO = 2;
-  const RELEASE_ID = "worker-v3-progressive";
+  const RELEASE_ID = "worker-v4-native-scroll";
 
   const root = document.documentElement;
-  const body = document.body;
   const experience = document.getElementById("scrollytelling");
   const preloader = document.getElementById("preloader");
   const loadingState = document.getElementById("loading-state");
@@ -61,6 +60,7 @@
   let decodePromises = new Map();
   let decodeQueue = [];
   let activeDecodes = 0;
+  let priorityDecodeIndex = null;
 
   const setProgress = (
     loadedCount,
@@ -77,12 +77,10 @@
 
   const lockScroll = () => {
     root.classList.add("is-loading");
-    body.classList.add("is-loading");
   };
 
   const unlockScroll = () => {
     root.classList.remove("is-loading");
-    body.classList.remove("is-loading");
   };
 
   const showLoading = () => {
@@ -113,6 +111,7 @@
     activeFetchControllers.forEach((controller) => controller.abort());
     activeFetchControllers.clear();
     frameFetchPromises.clear();
+    priorityDecodeIndex = null;
     decodeQueue.splice(0).forEach(({ reject }) => {
       reject(new Error("Carga cancelada."));
     });
@@ -371,18 +370,66 @@
     }
   };
 
-  const decodeBlobQueued = (blob, generation) =>
+  const createDecodeSupersededError = () => {
+    const error = new Error(
+      "El fotograma se ha sustituido por una solicitud más reciente.",
+    );
+    error.name = "DecodeSupersededError";
+    return error;
+  };
+
+  const prioritizeDecodeQueue = (index) => {
+    priorityDecodeIndex = index;
+
+    const preferredTask = decodeQueue.find(
+      (task) => task.index === index,
+    );
+
+    decodeQueue
+      .filter((task) => task !== preferredTask)
+      .forEach(({ reject }) => {
+        reject(createDecodeSupersededError());
+      });
+
+    decodeQueue = preferredTask ? [preferredTask] : [];
+    runDecodeQueue();
+  };
+
+  const decodeBlobQueued = (blob, generation, index, priority = false) =>
     new Promise((resolve, reject) => {
-      decodeQueue.push({
+      const hasUnresolvedPriority =
+        priorityDecodeIndex !== null &&
+        priorityDecodeIndex !== index &&
+        decodePromises.has(priorityDecodeIndex) &&
+        !decodedFrames.has(priorityDecodeIndex);
+
+      if (!priority && hasUnresolvedPriority) {
+        reject(createDecodeSupersededError());
+        return;
+      }
+
+      const task = {
         blob,
         generation,
+        index,
         resolve,
         reject,
-      });
+      };
+
+      if (priority || index === priorityDecodeIndex) {
+        decodeQueue.unshift(task);
+      } else {
+        decodeQueue.push(task);
+      }
+
       runDecodeQueue();
     });
 
-  const getDecodedFrame = async (index) => {
+  const getDecodedFrame = async (index, priority = false) => {
+    if (priority) {
+      prioritizeDecodeQueue(index);
+    }
+
     const cached = touchDecodedFrame(index);
     if (cached) return cached;
 
@@ -393,7 +440,18 @@
     const generation = loadGeneration;
     let promise;
     promise = getFrameBlob(index, generation)
-      .then((blob) => decodeBlobQueued(blob, generation))
+      .then((blob) => {
+        if (priority && index !== priorityDecodeIndex) {
+          throw createDecodeSupersededError();
+        }
+
+        return decodeBlobQueued(
+          blob,
+          generation,
+          index,
+          index === priorityDecodeIndex,
+        );
+      })
       .then((entry) => {
         if (generation !== loadGeneration) {
           entry.dispose();
@@ -401,7 +459,11 @@
         }
 
         decodedFrames.set(index, entry);
-        pruneDecodedFrames(new Set([index]));
+        pruneDecodedFrames(
+          new Set(
+            [index, priorityDecodeIndex].filter(Number.isInteger),
+          ),
+        );
         return entry;
       })
       .finally(() => {
@@ -415,14 +477,6 @@
   };
 
   const setupCanvas = async () => {
-    const { gsap, ScrollTrigger } = window;
-
-    if (!gsap || !ScrollTrigger) {
-      throw new Error(
-        "No se pudo iniciar el controlador de movimiento de la página.",
-      );
-    }
-
     const context2d = canvas.getContext("2d", {
       alpha: true,
       desynchronized: true,
@@ -432,9 +486,7 @@
       throw new Error("El navegador no ha podido iniciar el lienzo interactivo.");
     }
 
-    gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.config({ ignoreMobileResize: true });
-    await getDecodedFrame(0);
+    await getDecodedFrame(0, true);
 
     const sequenceState = { frame: 0 };
     let desiredFrame = 0;
@@ -442,7 +494,11 @@
     let renderToken = 0;
     let resizeFrame = 0;
     let refreshFrame = 0;
+    let scrollFrame = 0;
     let resizeTimer = 0;
+    let scrollStart = 0;
+    let scrollRange = 1;
+    let movementDirection = 1;
 
     const drawFrame = (entry, frameIndex) => {
       const image = entry.image;
@@ -473,15 +529,21 @@
       context2d.imageSmoothingQuality = "high";
       context2d.drawImage(image, x, y, drawWidth, drawHeight);
       canvas.dataset.currentFrame = String(frameIndex + 1);
+      canvas.dataset.frameLoadError = "";
       lastDrawnFrame = frameIndex;
     };
 
     const warmNearbyFrames = (frameIndex) => {
-      [frameIndex - 1, frameIndex + 1]
-        .filter((index) => index >= 0 && index < TOTAL_FRAMES)
-        .forEach((index) => {
-          getDecodedFrame(index).catch(() => {});
-        });
+      const preferredIndex = frameIndex + movementDirection;
+      const fallbackIndex = frameIndex - movementDirection;
+      const index =
+        preferredIndex >= 0 && preferredIndex < TOTAL_FRAMES
+          ? preferredIndex
+          : fallbackIndex;
+
+      if (index >= 0 && index < TOTAL_FRAMES) {
+        getDecodedFrame(index).catch(() => {});
+      }
     };
 
     const render = (force = false) => {
@@ -490,10 +552,24 @@
         Math.max(0, Math.round(sequenceState.frame)),
       );
 
+      const targetChanged = frameIndex !== desiredFrame;
+      const priorityChanged = frameIndex !== priorityDecodeIndex;
       desiredFrame = frameIndex;
-      if (!force && frameIndex === lastDrawnFrame) return;
+      canvas.dataset.desiredFrame = String(frameIndex + 1);
+      if (
+        !targetChanged &&
+        !priorityChanged &&
+        !force &&
+        frameIndex === lastDrawnFrame
+      ) {
+        return;
+      }
 
       const token = ++renderToken;
+      if (priorityChanged) {
+        prioritizeDecodeQueue(frameIndex);
+      }
+      if (!force && frameIndex === lastDrawnFrame) return;
       const cached = touchDecodedFrame(frameIndex);
 
       if (cached) {
@@ -502,16 +578,78 @@
         return;
       }
 
-      getDecodedFrame(frameIndex)
+      getDecodedFrame(frameIndex, true)
         .then((entry) => {
           if (token !== renderToken || frameIndex !== desiredFrame) return;
           drawFrame(entry, frameIndex);
           warmNearbyFrames(frameIndex);
         })
         .catch((error) => {
+          if (error?.name === "DecodeSupersededError") {
+            if (token === renderToken && frameIndex === desiredFrame) {
+              window.requestAnimationFrame(() => render(true));
+            }
+            return;
+          }
+
           canvas.dataset.frameLoadError =
             error instanceof Error ? error.message : "Error de carga.";
         });
+    };
+
+    const clampFrame = (frame) =>
+      Math.min(TOTAL_FRAMES - 1, Math.max(0, frame));
+
+    const getScrollTop = () =>
+      window.scrollY ||
+      document.scrollingElement?.scrollTop ||
+      document.documentElement.scrollTop ||
+      0;
+
+    const updateScrollMetrics = () => {
+      const bounds = container.getBoundingClientRect();
+      scrollStart = getScrollTop() + bounds.top;
+      scrollRange = Math.max(
+        1,
+        container.offsetHeight - window.innerHeight,
+      );
+      canvas.dataset.scrollRange = String(Math.round(scrollRange));
+    };
+
+    const setFrameFromInput = (frame, source) => {
+      const nextFrame = clampFrame(frame);
+      if (nextFrame > sequenceState.frame) {
+        movementDirection = 1;
+      } else if (nextFrame < sequenceState.frame) {
+        movementDirection = -1;
+      }
+      sequenceState.frame = nextFrame;
+      canvas.dataset.scrollProgress = (
+        nextFrame / Math.max(1, TOTAL_FRAMES - 1)
+      ).toFixed(4);
+      canvas.dataset.inputSource = source;
+      render();
+      return nextFrame;
+    };
+
+    const updateFromDocumentScroll = () => {
+      const progress = Math.min(
+        1,
+        Math.max(0, (getScrollTop() - scrollStart) / scrollRange),
+      );
+      setFrameFromInput(
+        progress * (TOTAL_FRAMES - 1),
+        "document-scroll",
+      );
+    };
+
+    const scheduleScrollUpdate = () => {
+      if (scrollFrame) return;
+
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = 0;
+        updateFromDocumentScroll();
+      });
     };
 
     const resizeCanvas = () => {
@@ -553,30 +691,15 @@
       window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
         resizeCanvas();
-        ScrollTrigger.refresh();
+        updateScrollMetrics();
+        updateFromDocumentScroll();
       }, 180);
     };
 
     resizeCanvas();
-
-    const tween = gsap.to(sequenceState, {
-      frame: TOTAL_FRAMES - 1,
-      snap: "frame",
-      ease: "none",
-      scrollTrigger: {
-        trigger: container,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 0.5,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => {
-          canvas.dataset.scrollProgress = self.progress.toFixed(4);
-        },
-      },
-      onUpdate: render,
-    });
-
-    canvas.dataset.scrollTriggerCount = String(ScrollTrigger.getAll().length);
+    updateScrollMetrics();
+    updateFromDocumentScroll();
+    canvas.dataset.controller = "native-v4";
 
     const resizeObserver =
       "ResizeObserver" in window
@@ -584,24 +707,29 @@
         : null;
 
     resizeObserver?.observe(canvas);
+    window.addEventListener("scroll", scheduleScrollUpdate, {
+      passive: true,
+    });
     window.addEventListener("resize", scheduleResize);
     window.addEventListener("orientationchange", scheduleResize);
+    window.visualViewport?.addEventListener("resize", scheduleResize);
 
     refreshFrame = window.requestAnimationFrame(() => {
-      ScrollTrigger.refresh();
-      ScrollTrigger.update();
+      updateScrollMetrics();
+      updateFromDocumentScroll();
       render(true);
     });
 
     return () => {
       window.cancelAnimationFrame(resizeFrame);
       window.cancelAnimationFrame(refreshFrame);
+      window.cancelAnimationFrame(scrollFrame);
       window.clearTimeout(resizeTimer);
       resizeObserver?.disconnect();
+      window.removeEventListener("scroll", scheduleScrollUpdate);
       window.removeEventListener("resize", scheduleResize);
       window.removeEventListener("orientationchange", scheduleResize);
-      tween.scrollTrigger?.kill();
-      tween.kill();
+      window.visualViewport?.removeEventListener("resize", scheduleResize);
     };
   };
 
@@ -620,6 +748,7 @@
       if (generation !== loadGeneration) return;
 
       setProgress(INITIAL_PRELOAD_COUNT, INITIAL_PRELOAD_COUNT);
+      unlockScroll();
       scrollCleanup = await setupCanvas();
 
       if (generation !== loadGeneration) {
@@ -631,7 +760,6 @@
       preloader.hidden = true;
       retryButton.disabled = false;
       experience.setAttribute("aria-busy", "false");
-      unlockScroll();
       preloadRemainingFrames();
     } catch (error) {
       if (generation !== loadGeneration) return;
