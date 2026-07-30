@@ -1,6 +1,7 @@
 {
   "status": "ok",
-  "release": "worker-v6-final-definitive",
+  "release": "worker-v7-clean-depth",
   "frames": 97,
-  "commit": "deploy-trigger-20260730"
+  "rendering": "native-canvas-no-css-scale",
+  "text_depth": "feathered-subject-mask"
 }
