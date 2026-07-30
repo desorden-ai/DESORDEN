@@ -1,0 +1,11 @@
+**/node_modules
+**/.git
+**/.DS_Store
+.wrangler
+.dev.vars*
+.env*
+package.json
+package-lock.json
+wrangler.jsonc
+README-SUBIDA-CLOUDFLARE.txt
+DESORDEN_RECOVERY_REVIEW.patch
