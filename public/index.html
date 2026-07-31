@@ -1,329 +1,36 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="ca">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DESORDEN.cat — Versión Final Definitiva</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
-
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
-    body, html {
-      background-color: #000000;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      overscroll-behavior-y: none;
-      touch-action: none;
-    }
-
-    .grain-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      z-index: 10;
-      opacity: 0.04;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
-
-    .viewport {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #000000;
-      z-index: 1;
-    }
-
-    .video-wrapper {
-      position: relative;
-      width: 100vw;
-      height: calc(100vw * (1920 / 1080));
-      max-height: 100vh;
-      max-width: calc(100vh * (1080 / 1920));
-      overflow: hidden;
-      background: #000;
-    }
-
-    /* CONTENEDOR DEL CHICO (Reducido un 20% adicional: de 0.92 a 0.80) */
-    #scale-container {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      transform-origin: bottom left; 
-      will-change: transform;
-    }
-
-    #sequence-canvas {
-      width: 100%;
-      height: 100%;
-      object-fit: cover; 
-      display: block;
-      z-index: 2;
-    }
-
-    /* MÁSCARA DE CORTE DURO (DETRÁS DEL PERFIL) */
-    .text-mask-wrapper {
-      position: absolute;
-      inset: 0;
-      z-index: 15;
-      pointer-events: none;
-      -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 43%, black 43%, black 100%);
-      mask-image: linear-gradient(to right, transparent 0%, transparent 43%, black 43%, black 100%);
-    }
-
-    #text-mover {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      will-change: transform;
-    }
-
-    /* TEXTO ANTON (Línea naranja, escala reducida y fade-in) */
-    .cinematic-text {
-      position: absolute;
-      top: 62%; 
-      right: 8%; 
-      transform: translateY(-50%); 
-      color: #EBB221;
-      font-family: "Anton", sans-serif;
-      font-size: 9vw; 
-      white-space: nowrap; 
-      text-align: right; 
-      text-shadow: 2px 2px 0px #000, -2px -2px 0px #000, 0 10px 30px rgba(0,0,0,0.9);
-      opacity: 0;
-      will-change: opacity, transform;
-    }
-
-    .text-stretch {
-      display: inline-block;
-      transform: scaleY(1.05); 
-      transform-origin: right center;
-      letter-spacing: 1px;
-    }
-
-    /* HUD TÉCNICO */
-    .hud-corner {
-      position: absolute;
-      width: 25px;
-      height: 25px;
-      border-color: rgba(255, 255, 255, 0.4);
-      border-style: solid;
-      z-index: 20;
-    }
-
-    .hud-top-left { top: 40px; left: 40px; border-width: 2px 0 0 2px; }
-    .hud-top-right { top: 40px; right: 40px; border-width: 2px 2px 0 0; }
-    .hud-bottom-right { bottom: 40px; right: 40px; border-width: 0 2px 2px 0; }
-
-    .hud-timecode {
-      position: absolute;
-      top: 45px;
-      right: 75px;
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.7);
-      letter-spacing: 3px;
-      z-index: 20;
-    }
-    
-    .hud-rec {
-      position: absolute;
-      top: 45px;
-      left: 75px;
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: #EBB221;
-      letter-spacing: 3px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      z-index: 20;
-    }
-
-    .hud-rec-dot {
-      width: 8px; height: 8px; background-color: #EBB221; border-radius: 50%;
-    }
-
-    .status-card {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 200;
-      border: 1px solid rgba(235, 178, 33, 0.4);
-      border-radius: 16px;
-      padding: 30px 40px;
-      text-align: center;
-      background: rgba(10, 10, 10, 0.95);
-      backdrop-filter: blur(20px);
-      width: 90%;
-      max-width: 400px;
-    }
-
-    .status-card h2 { color: #EBB221; font-size: 1.1rem; margin-bottom: 12px; letter-spacing: 2px; }
-    .progress-bar-bg { width: 100%; height: 2px; background: rgba(255, 255, 255, 0.1); margin-top: 15px; }
-    .progress-bar-fill { width: 0%; height: 100%; background: #EBB221; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="description" content="DESORDEN: direcció visual, vídeo, fotografia, dron, IA visual i web.">
+<link rel="canonical" href="https://www.desorden.cat/">
+<meta property="og:type" content="website"><meta property="og:locale" content="ca_ES">
+<meta property="og:title" content="DESORDEN — Si no et veuen, no et trien">
+<meta property="og:description" content="Direcció visual, vídeo, fotografia, dron, IA visual i web.">
+<meta property="og:image" content="https://www.desorden.cat/assets/qui-soc-poster.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="/frames/v1/frame_0001.webp" fetchpriority="high">
+<title>DESORDEN — Si no et veuen, no et trien</title>
+<link rel="stylesheet" href="/assets/base.20260731.css">
+<link rel="stylesheet" href="/assets/sections.20260731.css">
 </head>
 <body>
-
-  <div class="grain-overlay"></div>
-
-  <div class="viewport">
-    <div class="video-wrapper">
-      
-      <div class="hud-corner hud-top-left"></div>
-      <div class="hud-corner hud-top-right"></div>
-      <div class="hud-corner hud-bottom-right"></div>
-      <div class="hud-rec"><div class="hud-rec-dot"></div> RAW</div>
-      <div class="hud-timecode">FRM: <span id="tc-counter">001</span>/097</div>
-
-      <div id="scale-container">
-        <canvas id="sequence-canvas"></canvas>
-      </div>
-
-      <div class="text-mask-wrapper">
-        <div id="text-mover">
-          <div class="cinematic-text" id="cinematic-text">
-            <span class="text-stretch">SI NO TE VEN</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="status-card" id="status-card">
-    <h2>DESORDEN.cat — DEFINITIVO</h2>
-    <p id="status-text" style="color: #888; font-size: 0.85rem;">Cargando fotogramas...</p>
-    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
-  </div>
-
-  <script>
-    const canvas = document.getElementById('sequence-canvas');
-    const ctx = canvas.getContext('2d');
-    const statusCard = document.getElementById('status-card');
-    const progressFill = document.getElementById('progress-fill');
-    const tcCounter = document.getElementById('tc-counter');
-    
-    const scaleContainer = document.getElementById('scale-container');
-    const textMover = document.getElementById('text-mover');
-    const cinematicText = document.getElementById('cinematic-text');
-    
-    let images = [];
-    const TOTAL_FRAMES = 97;
-    let currentFrame = 0;
-
-    const localBase = '/frames/v1/';
-    const githubBase = 'https://raw.githubusercontent.com/desorden-ai/DESORDEN/DESORDEN/public/frames/v1/';
-
-    function loadFrames() {
-      let loaded = 0;
-      for (let i = 1; i <= TOTAL_FRAMES; i++) {
-        const fileName = `frame_${String(i).padStart(4, '0')}.webp`;
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.src = `${localBase}${fileName}`;
-
-        img.onload = () => {
-          loaded++;
-          if (loaded === 1) { canvas.width = img.naturalWidth || 1080; canvas.height = img.naturalHeight || 1920; }
-          updateProgress(loaded);
-        };
-        img.onerror = () => {
-          const fb = new Image(); fb.crossOrigin = "Anonymous"; fb.src = `${githubBase}${fileName}`;
-          fb.onload = () => { images[i - 1] = fb; loaded++; if (loaded === 1) { canvas.width = fb.naturalWidth || 1080; canvas.height = fb.naturalHeight || 1920; } updateProgress(loaded); };
-          fb.onerror = () => { loaded++; updateProgress(loaded); };
-        };
-        images.push(img);
-      }
-    }
-
-    function updateProgress(loaded) {
-      progressFill.style.width = `${(loaded / TOTAL_FRAMES) * 100}%`;
-      if (loaded === TOTAL_FRAMES) setTimeout(initInteraction, 200);
-    }
-
-    function renderFrame(index) {
-      if (!images[index] || !images[index].complete) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(images[index], 0, 0, canvas.width, canvas.height);
-      
-      tcCounter.textContent = String(index + 1).padStart(3, '0');
-      applyCameraAndTextMovement(index);
-    }
-
-    function applyCameraAndTextMovement(frameIndex) {
-      const progress = frameIndex / (TOTAL_FRAMES - 1);
-      
-      // 1. ZOOM OUT 20% MÁS PEQUEÑO: Empieza en 0.92 y termina en 0.80
-      const currentScale = 0.92 - (0.12 * progress);
-      scaleContainer.style.transform = `scale(${currentScale})`;
-
-      // 2. DESPLAZAMIENTO DEL TEXTO (Desde detrás del perfil)
-      const textTranslateX = -25 + (25 * progress); 
-      textMover.style.transform = `translateX(${textTranslateX}vw)`;
-      
-      // 3. APARICIÓN PROGRESIVA (FADE-IN DESDE CERO)
-      const textOpacity = progress * 1.5; 
-      cinematicText.style.opacity = Math.min(1, textOpacity);
-    }
-
-    function initInteraction() {
-      statusCard.style.display = 'none';
-      renderFrame(0);
-
-      let startY = 0;
-      let startFrame = 0;
-      const sensitivity = 4.5; 
-
-      window.addEventListener('touchstart', (e) => { 
-        startY = e.touches[0].clientY; 
-        startFrame = currentFrame; 
-      }, { passive: false });
-
-      window.addEventListener('touchmove', (e) => {
-        e.preventDefault(); 
-        const diffY = e.touches[0].clientY - startY; 
-        let targetFrame = startFrame + Math.floor(diffY / sensitivity);
-        targetFrame = Math.max(0, Math.min(TOTAL_FRAMES - 1, targetFrame));
-        if (targetFrame !== currentFrame) { 
-          currentFrame = targetFrame; 
-          requestAnimationFrame(() => renderFrame(currentFrame)); 
-        }
-      }, { passive: false });
-
-      window.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        let targetFrame = currentFrame + (Math.sign(e.deltaY) * 3); 
-        targetFrame = Math.max(0, Math.min(TOTAL_FRAMES - 1, targetFrame));
-        if (targetFrame !== currentFrame) { 
-          currentFrame = targetFrame; 
-          requestAnimationFrame(() => renderFrame(currentFrame)); 
-        }
-      }, { passive: false });
-    }
-
-    loadFrames();
-  </script>
-</body>
-</html>
+<a class="skip" href="#main">Anar al contingut</a>
+<div class="boot" id="boot" role="status" aria-live="polite"><div><strong>DESORDEN</strong><div class="boot-line"><i></i></div><p id="boot-copy">PREPARANT EL PRIMER FOTOGRAMA</p></div></div>
+<div class="shell">
+<aside class="rail" aria-label="Progrés de la pàgina"><span class="dot"></span><span class="v o">VIDEO MODE</span><span class="track"><i id="progress"></i></span><span class="v g">SCROLL ADAPTIU</span><span class="count"><b id="current">01</b><em></em><span>05</span></span></aside>
+<main id="main">
+<section class="hero" id="hero" data-n="01" aria-labelledby="hero-title"><div class="sticky"><canvas id="canvas" aria-hidden="true"></canvas><img class="fallback" src="/frames/v1/frame_0001.webp" alt="Perfil lateral en clarobscur amb una bena groga als ulls"><div class="shade"></div><div class="frame">FRM <span id="frame">001</span>/097</div><h1 id="hero-title"><span>SI NO ET VEUEN</span><span>NO ET TRIEN</span></h1><span class="hint">LLISCA</span></div></section>
+<section class="bridge" aria-hidden="true"><div><span>QUI</span><span>SOC</span></div></section>
+<section class="section about" id="qui-soc" data-n="02" aria-labelledby="about-title"><div class="about-media"><div class="about-halo"></div><img src="/assets/qui-soc-poster.webp" width="1080" height="1920" loading="lazy" decoding="async" alt="Silueta lateral de David Milla amb contrallum taronja"></div><div class="inner"><h2 class="display" id="about-title">QUI SOC</h2><div class="about-copy"><p>David Milla, creador i director de <strong>DESORDEN.</strong></p><p>Direcció visual, vídeo, fotografia, dron, IA i web.</p><p>Un <strong>únic interlocutor</strong> durant tot el procés.</p></div><div class="credentials"><h3>FORMACIONS I ACREDITACIONS</h3><div class="cred-grid"><article><span class="mark">G</span><p>Fundamentals of Digital Marketing Certification</p></article><article><span class="mark">AESA</span><p>Certificació oficial de pilot de dron</p></article></div></div></div></section>
+<section class="services" id="que-faig" data-n="03" aria-labelledby="services-title"><div class="sticky"><div class="services-head"><h2 class="display" id="services-title">QUÈ FAIG</h2><p>Direcció visual i producció de principi a fi.</p></div><div class="stage"><div class="cube" id="cube"><div class="face front"><span id="front">VÍDEO</span></div><div class="face top"><span id="top">FOTOGRAFIA</span></div></div></div><div class="service-index"><b id="service-index">01</b> / 05</div></div><ul class="sr"><li>Vídeo</li><li>Fotografia</li><li>Dron</li><li>IA visual</li><li>Web</li></ul></section>
+<section class="section radar" id="radar" data-n="04" aria-labelledby="radar-title"><div class="inner"><h2 class="display" id="radar-title">EN EL RADAR</h2><div class="cards"><article class="card"><img src="/assets/thumb-leire.webp" width="360" height="450" loading="lazy" decoding="async" alt="Miniatura de l'evidència pública associada a Leire Martínez"><div><h3>LEIRE MARTÍNEZ</h3><p>Reacció pública a una peça audiovisual.</p><button type="button" data-e="leire"><span>VEURE INTERACCIÓ</span><i>→</i></button></div></article><article class="card"><img src="/assets/thumb-rosalia.webp" width="360" height="450" loading="lazy" decoding="async" alt="Miniatura d'una peça pública de DESORDEN"><div><h3>ROSALÍA</h3><p>Evidència visual d'una interacció pública.</p><button type="button" data-e="rosalia"><span>VEURE INTERACCIÓ</span><i>→</i></button></div></article></div></div></section>
+<section class="section contact" id="contacte" data-n="05" aria-labelledby="contact-title"><div class="inner"><h2 class="display" id="contact-title"><span>PARLEM DEL</span><span>TEU PROJECTE</span></h2><p class="lead">Fem visible allò que tens al cap.</p><form class="form" id="form" novalidate><div class="field"><label for="name">Nom</label><input id="name" name="name" autocomplete="name" required minlength="2" placeholder="Nom"><small class="error" id="name-error"></small></div><div class="field"><label for="contact">Contacte</label><input id="contact" name="contact" autocomplete="email" required minlength="5" placeholder="Correu, telèfon o Instagram"><small class="error" id="contact-error"></small></div><div class="field"><label for="objective">Objectiu</label><textarea id="objective" name="objective" required minlength="10" placeholder="Què vols crear, on es farà i quan ho necessites?"></textarea><small class="error" id="objective-error"></small></div><button class="submit" type="submit"><span>PARLEM</span><i>→</i></button><p class="status" id="status" role="status" aria-live="polite"></p></form><div class="channels"><button class="channel" disabled>WHATSAPP</button><button class="channel" disabled>CORREU</button></div><a class="insta" href="https://www.instagram.com/desorden.cat/" target="_blank" rel="noopener noreferrer">@desorden.cat ↗</a><footer>DESORDEN · <span id="year"></span></footer></div></section>
+</main></div>
+<dialog id="dialog" aria-labelledby="dialog-title"><div class="modal"><button class="close" id="close" aria-label="Tancar">×</button><h2 id="dialog-title">EVIDÈNCIA</h2><img id="dialog-img" alt="Captura de l'evidència pública"><p id="dialog-copy"></p></div></dialog>
+<noscript><div class="noscript">Aquesta experiència necessita JavaScript per controlar la seqüència visual.</div></noscript>
+<script src="/assets/site.20260731.js" defer></script>
+</body></html>
