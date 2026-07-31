@@ -19,6 +19,7 @@ jobs:
 
     env:
       RAW_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RAW_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
       - name: Checkout repository
@@ -30,27 +31,76 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Normalize Cloudflare token
+      - name: Normalize Cloudflare credentials
         shell: bash
         run: |
-          token="$RAW_CLOUDFLARE_API_TOKEN"
-          token="${token//$'\r'/}"
-          token="${token//$'\n'/}"
-          token="${token#Bearer }"
-          token="${token#bearer }"
-          token="${token#\"}"
-          token="${token%\"}"
-          token="${token#\'}"
-          token="${token%\'}"
-          test -n "$token" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
+          set -euo pipefail
+
+          raw="$RAW_CLOUDFLARE_API_TOKEN"
+          test -n "$raw" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
+
+          # Accept the token secret by itself and also recover it from common
+          # accidental paste formats such as Bearer <token>,
+          # CLOUDFLARE_API_TOKEN=<token>, or a copied curl header.
+          compact="$(printf '%s' "$raw" | tr -d '\r\n')"
+          compact="$(printf '%s' "$compact" | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//')"
+
+          token=""
+          if [[ "$compact" =~ [Bb]earer[[:space:]]+([^\"\047[:space:]]+) ]]; then
+            token="${BASH_REMATCH[1]}"
+          elif [[ "$compact" =~ CLOUDFLARE_API_TOKEN[[:space:]]*=[[:space:]]*[\"\047]?([^\"\047[:space:]]+) ]]; then
+            token="${BASH_REMATCH[1]}"
+          else
+            token="$compact"
+            token="${token#\"}"
+            token="${token%\"}"
+            token="${token#\'}"
+            token="${token%\'}"
+          fi
+
+          token="$(printf '%s' "$token" | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//')"
+          test -n "$token" || { echo "The Cloudflare API token secret is empty after normalization."; exit 1; }
+
           echo "::add-mask::$token"
           printf 'CLOUDFLARE_API_TOKEN=%s\n' "$token" >> "$GITHUB_ENV"
+
+          account_id="$(printf '%s' "$RAW_CLOUDFLARE_ACCOUNT_ID" | tr -d '\r\n[:space:]')"
+          if [[ -n "$account_id" ]]; then
+            echo "::add-mask::$account_id"
+            printf 'CLOUDFLARE_ACCOUNT_ID=%s\n' "$account_id" >> "$GITHUB_ENV"
+          fi
+
+          echo "Cloudflare token characters: ${#token}"
+          if [[ "$token" == cfut_* ]]; then
+            echo "Cloudflare token format: current cfut_ token"
+          elif [[ "$token" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "Cloudflare token format: legacy-compatible character set"
+          else
+            echo "Invalid token characters detected. Replace the GitHub secret with only the API token secret shown once by Cloudflare."
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run smoke tests
         run: npm test
+
+      - name: Verify Cloudflare API token
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl -sS --fail-with-body \
+            'https://api.cloudflare.com/client/v4/user/tokens/verify' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")"
+          RESPONSE="$response" node -e '
+            const body = JSON.parse(process.env.RESPONSE);
+            if (!body.success || body.result?.status !== "active") {
+              console.error("Cloudflare rejected the API token:", JSON.stringify(body.errors || body));
+              process.exit(1);
+            }
+            console.log("Cloudflare API token is valid and active.");
+          '
 
       - name: Verify Cloudflare authentication
         run: npx wrangler whoami
