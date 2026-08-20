@@ -1,0 +1,51 @@
+name: Configure Panasonic DNS
+on:
+  push:
+    branches: [DESORDEN]
+  workflow_dispatch:
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Configure panasonic.desorden.cat
+        env:
+          RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          compact="$(printf '%s' "$RAW_TOKEN" | tr -d '\r\n')"
+          compact="$(printf '%s' "$compact" | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//')"
+          if [[ "$compact" =~ [Bb]earer[[:space:]]+([^\"\047[:space:]]+) ]]; then
+            TOKEN="${BASH_REMATCH[1]}"
+          elif [[ "$compact" =~ CLOUDFLARE_API_TOKEN[[:space:]]*=[[:space:]]*[\"\047]?([^\"\047[:space:]]+) ]]; then
+            TOKEN="${BASH_REMATCH[1]}"
+          else
+            TOKEN="$compact"
+            TOKEN="${TOKEN#\"}"; TOKEN="${TOKEN%\"}"; TOKEN="${TOKEN#\'}"; TOKEN="${TOKEN%\'}"
+          fi
+          echo "::add-mask::$TOKEN"
+          curl --fail-with-body --silent --show-error \
+            "https://api.cloudflare.com/client/v4/zones?name=desorden.cat&account.id=$ACCOUNT_ID" \
+            -H "Authorization: Bearer $TOKEN" > /tmp/zones.json
+          ZONE_ID="$(jq -r '.result[0].id // empty' /tmp/zones.json)"
+          test -n "$ZONE_ID"
+          curl --fail-with-body --silent --show-error \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=panasonic.desorden.cat" \
+            -H "Authorization: Bearer $TOKEN" > /tmp/records.json
+          RECORD_ID="$(jq -r '.result[0].id // empty' /tmp/records.json)"
+          BODY='{"type":"CNAME","name":"panasonic.desorden.cat","content":"proxy-v2.appdeploy.ai","ttl":1,"proxied":false}'
+          if [ -n "$RECORD_ID" ]; then
+            curl --fail-with-body --silent --show-error -X PUT \
+              "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+              -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+              --data "$BODY" > /tmp/result.json
+          else
+            curl --fail-with-body --silent --show-error -X POST \
+              "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+              -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+              --data "$BODY" > /tmp/result.json
+          fi
+          jq -e '.success == true' /tmp/result.json >/dev/null
+          jq '{name:.result.name,type:.result.type,content:.result.content,proxied:.result.proxied}' /tmp/result.json
