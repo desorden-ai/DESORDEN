@@ -77,7 +77,7 @@
           <div class="home-card home-team-card">
             <div class="card-head">
               <div>
-                <span class="eyebrow">EQUIPO Y PRESENCIA</span>
+                <span class="eyebrow">CONTROL HORARIO</span>
                 <h3>Estado de Operarios</h3>
               </div>
               <button class="ghost" id="home-view-operators-btn" type="button">OPERARIOS ↗</button>
@@ -172,7 +172,8 @@
         <div class="clock-summary-grid">
           <article class="stat-card"><span>OPERARIO SELECCIONADO</span><strong id="operator-status-name">TODOS</strong></article>
           <article class="stat-card"><span>ESTADO LABORAL</span><strong class="shift-state" id="shift-state">SIN DATOS</strong></article>
-          <article class="stat-card"><span>PRESENCIA</span><strong class="presence-state" id="presence-state">SIN DATOS</strong></article>
+          <article class="stat-card"><span>ENTRADA HOY</span><strong id="today-in">—</strong></article>
+          <article class="stat-card"><span>SALIDA HOY</span><strong id="today-out">—</strong></article>
           <article class="stat-card"><span>TOTAL TRABAJADO HOY</span><strong id="today-worked">—</strong></article>
         </div>
         <div class="table-wrap">
@@ -310,14 +311,17 @@
       </div>
 
       <div class="drawer-status-grid">
-        <div class="drawer-status-card">
+        <div class="drawer-status-card span-2">
           <span>ESTADO LABORAL</span>
           <strong id="drawer-work-status">—</strong>
         </div>
         <div class="drawer-status-card">
-          <span>PRESENCIA</span>
-          <strong id="drawer-presence-status">—</strong>
-          <span id="drawer-last-seen" class="drawer-subtext">—</span>
+          <span>ENTRADA HOY</span>
+          <strong id="drawer-entry-time">—</strong>
+        </div>
+        <div class="drawer-status-card">
+          <span>SALIDA HOY</span>
+          <strong id="drawer-exit-time">—</strong>
         </div>
         <div class="drawer-status-card span-2">
           <span>TOTAL TRABAJADO HOY</span>

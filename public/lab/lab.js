@@ -389,8 +389,6 @@
     state.operators.forEach((op) => {
       const isSelected = state.selectedOperator === op.operatorId;
       const opSum = state.operatorsSummary[op.operatorId] || {};
-      const opPres = state.presence[op.operatorId] || op.presence || {};
-      const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
 
       const stateClass = op.status === 'disabled'
         ? 'state-disabled'
@@ -398,7 +396,7 @@
         ? 'state-working'
         : opSum.state === 'PAUSA'
         ? 'state-paused'
-        : 'state-inactive';
+        : 'state-finished';
 
       const stateLabel = op.status === 'disabled'
         ? 'DESACTIVADO'
@@ -406,21 +404,18 @@
         ? `TRABAJANDO${opSum.worked && opSum.worked !== '0h 0m' ? ` · ${opSum.worked}` : ''}`
         : opSum.state === 'PAUSA'
         ? 'EN PAUSA'
-        : 'FUERA';
+        : 'JORNADA FINALIZADA';
 
-      const presenceLabel = formatPresenceRelative(opPres.lastSeenAt, isConnected);
       const initials = getOperatorInitials(op.name);
 
       chips.push(`
         <button type="button" class="operator-chip ${isSelected ? 'active' : ''} ${stateClass}" data-operator-id="${esc(op.operatorId)}">
           <div class="operator-chip-avatar ${stateClass}">
             ${op.photoUrl ? `<img src="${esc(op.photoUrl)}" alt="${esc(op.name)}" />` : `<span class="initials">${esc(initials)}</span>`}
-            <span class="presence-dot ${isConnected ? 'connected' : 'disconnected'}" title="${isConnected ? 'Conectado ahora' : 'Desconectado'}"></span>
           </div>
           <div class="operator-chip-info">
             <strong>${esc(op.name).toUpperCase()}</strong>
             <span class="work-status ${stateClass}">${esc(stateLabel)}</span>
-            <span class="presence-status ${isConnected ? 'connected' : 'disconnected'}">${esc(presenceLabel)}</span>
           </div>
         </button>
       `);
@@ -452,8 +447,6 @@
     state.drawerOperator = op;
 
     const opSum = state.operatorsSummary[op.operatorId] || {};
-    const opPres = state.presence[op.operatorId] || op.presence || {};
-    const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
 
     const stateClass = op.status === 'disabled'
       ? 'state-disabled'
@@ -461,7 +454,7 @@
       ? 'state-working'
       : opSum.state === 'PAUSA'
       ? 'state-paused'
-      : 'state-inactive';
+      : 'state-finished';
 
     const stateLabel = op.status === 'disabled'
       ? 'DESACTIVADO'
@@ -469,9 +462,8 @@
       ? 'TRABAJANDO'
       : opSum.state === 'PAUSA'
       ? 'EN PAUSA'
-      : 'FUERA';
+      : 'JORNADA FINALIZADA';
 
-    const presenceLabel = formatPresenceRelative(opPres.lastSeenAt, isConnected);
     const initials = getOperatorInitials(op.name);
 
     if ($('#drawer-operator-name')) $('#drawer-operator-name').textContent = op.name.toUpperCase();
@@ -495,15 +487,14 @@
       workEl.className = `work-status ${stateClass}`;
     }
 
-    const presEl = $('#drawer-presence-status');
-    if (presEl) {
-      presEl.textContent = isConnected ? 'CONECTADO' : 'DESCONECTADO';
-      presEl.className = `presence-status ${isConnected ? 'connected' : 'disconnected'}`;
+    const entryEl = $('#drawer-entry-time');
+    if (entryEl) {
+      entryEl.textContent = opSum.in || '—';
     }
 
-    const lastSeenEl = $('#drawer-last-seen');
-    if (lastSeenEl) {
-      lastSeenEl.textContent = presenceLabel;
+    const exitEl = $('#drawer-exit-time');
+    if (exitEl) {
+      exitEl.textContent = opSum.out || '—';
     }
 
     const todayWorkedEl = $('#drawer-today-worked');
@@ -598,8 +589,6 @@
       } else {
         teamList.innerHTML = state.operators.map((op) => {
           const opSum = state.operatorsSummary[op.operatorId] || {};
-          const opPres = state.presence[op.operatorId] || op.presence || {};
-          const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
 
           const stateClass = op.status === 'disabled'
             ? 'state-disabled'
@@ -607,15 +596,15 @@
             ? 'state-working'
             : opSum.state === 'PAUSA'
             ? 'state-paused'
-            : 'state-inactive';
+            : 'state-finished';
 
           const stateLabel = op.status === 'disabled'
             ? 'DESACTIVADO'
             : opSum.state === 'TRABAJANDO'
-            ? `TRABAJANDO${opSum.worked && opSum.worked !== '0h 0m' ? ` · ${opSum.worked}` : ''}`
+            ? 'TRABAJANDO'
             : opSum.state === 'PAUSA'
             ? 'EN PAUSA'
-            : 'FUERA';
+            : 'JORNADA FINALIZADA';
 
           const initials = getOperatorInitials(op.name);
 
@@ -623,11 +612,14 @@
             <div class="home-operator-card" data-open-drawer="${esc(op.operatorId)}">
               <div class="operator-chip-avatar ${stateClass}" style="width:36px;height:36px;">
                 ${op.photoUrl ? `<img src="${esc(op.photoUrl)}" alt="${esc(op.name)}" />` : `<span class="initials" style="font-size:12px;">${esc(initials)}</span>`}
-                <span class="presence-dot ${isConnected ? 'connected' : 'disconnected'}"></span>
               </div>
               <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
-                <strong style="font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(op.name)}</strong>
-                <span class="work-status ${stateClass}" style="font-size:9px;">${esc(stateLabel)}</span>
+                <strong style="font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(op.name).toUpperCase()}</strong>
+                <span class="work-status ${stateClass}" style="font-size:10px;font-weight:700;">${esc(stateLabel)}</span>
+              </div>
+              <div style="text-align:right;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:11px;color:var(--text-muted);">${esc(opSum.in && opSum.in !== '—' ? `Entrada ${opSum.in}` : 'Sin entrada')}</span>
+                <strong style="font-size:11px;color:var(--accent,#00e5ff);">${esc(opSum.worked || '0h 0m')}</strong>
               </div>
             </div>
           `;
@@ -647,47 +639,45 @@
       if (!todayJobs.length) {
         todayList.innerHTML = '<div class="empty">Sin trabajos asignados para hoy.</div>';
       } else {
-        todayList.innerHTML = todayJobs.map((j) => {
-          const op = state.operators.find((x) => x.operatorId === j.operatorId);
-          return `
-            <div class="home-job-item" data-job-id="${esc(j.id)}">
-              <time>${esc(j.time || '--:--')}</time>
-              <div class="job-main">
-                <strong>${esc(j.sa || j.client || 'TRABAJO')}</strong>
-                <span>${esc(j.client || '—')}${j.city ? ` · ${esc(j.city)}` : ''}${op ? ` (${esc(op.name)})` : ''}</span>
+        todayList.innerHTML = todayJobs.map((j) => `
+          <div class="home-job-item" data-job-id="${esc(j.id)}">
+            <div class="home-job-time">${esc(j.time || '—')}</div>
+            <div class="home-job-info">
+              <div style="display:flex;gap:6px;align-items:center;">
+                <strong>${esc(j.sa || 'SA')}</strong>
+                <span class="badge muted" style="font-size:9px;">${esc(j.type || 'Avería')}</span>
               </div>
-              <span class="badge muted" style="font-size:9px;">${esc(j.type || 'Avería')}</span>
+              <span class="home-job-client">${esc(j.client || '—')} · ${esc(j.city || '')}</span>
             </div>
-          `;
-        }).join('');
+            <div class="home-job-operator">${esc(operatorName(j.operatorId))}</div>
+          </div>
+        `).join('');
         todayList.querySelectorAll('[data-job-id]').forEach((item) => {
           item.addEventListener('click', () => openJobDialog(item.dataset.jobId));
         });
       }
     }
 
-    // 3. Upcoming jobs (next days)
-    const upcomingJobs = state.agenda
-      .filter((j) => j.date > today)
-      .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
-      .slice(0, 10);
+    // 3. Upcoming jobs
     const upcomingList = $('#home-upcoming-jobs');
     if (upcomingList) {
-      if (!upcomingJobs.length) {
-        upcomingList.innerHTML = '<div class="empty">Sin trabajos planificados en próximos días.</div>';
+      const futureJobs = state.agenda.filter((j) => j.date > today).sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || '')).slice(0, 5);
+      if (!futureJobs.length) {
+        upcomingList.innerHTML = '<div class="empty">Sin trabajos futuros programados.</div>';
       } else {
-        upcomingList.innerHTML = upcomingJobs.map((j) => {
-          const op = state.operators.find((x) => x.operatorId === j.operatorId);
-          return `
-            <div class="home-job-item" data-job-id="${esc(j.id)}">
-              <time style="font-size:10px;min-width:55px;">${esc(j.date?.slice(5) || '')} ${esc(j.time || '')}</time>
-              <div class="job-main">
-                <strong>${esc(j.sa || j.client || 'TRABAJO')}</strong>
-                <span>${esc(j.client || '—')}${op ? ` (${esc(op.name)})` : ''}</span>
+        upcomingList.innerHTML = futureJobs.map((j) => `
+          <div class="home-job-item" data-job-id="${esc(j.id)}">
+            <div class="home-job-time" style="font-size:10px;">${esc(formatDayHeader(j.date))}</div>
+            <div class="home-job-info">
+              <div style="display:flex;gap:6px;align-items:center;">
+                <strong>${esc(j.sa || 'SA')}</strong>
+                <span style="font-size:11px;color:var(--text-muted);">${esc(j.time || '')}</span>
               </div>
+              <span class="home-job-client">${esc(j.client || '—')} · ${esc(j.city || '')}</span>
             </div>
-          `;
-        }).join('');
+            <div class="home-job-operator">${esc(operatorName(j.operatorId))}</div>
+          </div>
+        `).join('');
         upcomingList.querySelectorAll('[data-job-id]').forEach((item) => {
           item.addEventListener('click', () => openJobDialog(item.dataset.jobId));
         });
@@ -695,14 +685,14 @@
     }
 
     // 4. Recent photos
-    const recentPhotos = state.photos.slice(0, 6);
-    const photosList = $('#recent-photos');
-    if (photosList) {
-      if (!recentPhotos.length) {
-        photosList.innerHTML = '<div class="empty" style="grid-column:1/-1;">Sin fotos recibidas</div>';
+    const recentPhotosList = $('#recent-photos');
+    if (recentPhotosList) {
+      const recent = state.photos.slice(0, 6);
+      if (!recent.length) {
+        recentPhotosList.innerHTML = '<div class="empty">Sin fotos recientes</div>';
       } else {
-        photosList.innerHTML = recentPhotos.map((p) => `
-          <div class="home-photo-thumb" title="${esc(p.sa || p.client || 'Foto')}">
+        recentPhotosList.innerHTML = recent.map((p) => `
+          <div class="home-photo-thumbnail" title="${esc(p.sa || p.client || '')}">
             <img src="${esc(p.url || p.photoUrl || '')}" alt="${esc(p.sa || 'Foto')}" loading="lazy" />
           </div>
         `).join('');
@@ -712,58 +702,35 @@
     // 5. Chat preview
     const chatPreview = $('#home-chat-preview');
     if (chatPreview) {
-      const recentMsgs = state.chatMessages.slice(-5);
-      if (!recentMsgs.length) {
-        chatPreview.innerHTML = '<div class="empty">Sin mensajes en el chat de equipo.</div>';
+      const lastMessages = state.chatMessages.slice(-4);
+      if (!lastMessages.length) {
+        chatPreview.innerHTML = '<div class="empty">No hay mensajes recientes en el chat</div>';
       } else {
-        chatPreview.innerHTML = recentMsgs.map((m) => {
-          const isOffice = m.sender_id === 'office' || m.sender_role === 'office';
-          const timeStr = m.created_at ? fmtDate(new Date(m.created_at), { hour: '2-digit', minute: '2-digit' }) : '';
-          return `
-            <div class="home-chat-msg-item">
-              <span class="badge ${isOffice ? 'ok' : 'muted'}" style="font-size:8px;padding:1px 4px;align-self:flex-start;">${isOffice ? 'OFICINA' : 'TÉCNICO'}</span>
-              <div style="flex:1;min-width:0;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <strong>${esc(m.sender_name)}</strong>
-                  <time style="font-size:9px;color:#666;">${esc(timeStr)}</time>
-                </div>
-                <p>${esc(m.body)}</p>
-              </div>
-            </div>
-          `;
-        }).join('');
+        chatPreview.innerHTML = lastMessages.map((m) => `
+          <div class="home-chat-msg-row">
+            <strong style="color:${m.sender_role === 'office' ? 'var(--accent,#00e5ff)' : 'var(--text,#e5e7eb)'};">${esc(m.sender_name)}:</strong>
+            <span>${esc(m.body)}</span>
+            <span class="home-chat-msg-time">${esc(formatChatTime(m.created_at))}</span>
+          </div>
+        `).join('');
       }
     }
   }
 
   // ==================================================
-  // AGENDA & CALENDAR
+  // AGENDA
   // ==================================================
   async function loadAgenda() {
-    const from = isoDate(state.weekStart);
-    const to = isoDate(addDays(state.weekStart, 6));
-    const operator = state.selectedOperator === 'all' ? '' : `&operatorId=${encodeURIComponent(state.selectedOperator)}`;
-    const statusEl = $('#agenda-status');
-    if (statusEl) {
-      statusEl.textContent = 'Actualizando agenda…';
-      statusEl.className = 'status-line';
-    }
+    const status = $('#agenda-status');
+    if (status) status.textContent = 'Cargando agenda…';
+    const operator = state.selectedOperator === 'all' ? '' : `?operatorId=${encodeURIComponent(state.selectedOperator)}`;
     try {
-      const payload = await api(`/agenda?from=${from}&to=${to}${operator}`);
-      const list = Array.isArray(payload) ? payload : payload?.agenda || payload?.items || payload?.jobs || [];
-      state.agenda = list.map(normalizeJob);
-      if (statusEl) {
-        statusEl.textContent = `${state.agenda.length} trabajo${state.agenda.length === 1 ? '' : 's'} · ${from} → ${to}`;
-        statusEl.className = 'status-line ok';
-      }
-      setConnection(true);
-    } catch (error) {
+      const payload = await api(`/agenda${operator}`);
+      state.agenda = Array.isArray(payload) ? payload : payload?.jobs || payload?.items || [];
+      if (status) status.textContent = `${state.agenda.length} trabajos cargados`;
+    } catch {
       state.agenda = [];
-      if (statusEl) {
-        statusEl.textContent = `Agenda no disponible · ${error.message}`;
-        statusEl.className = 'status-line error';
-      }
-      setConnection(false, 'API NO DISPONIBLE');
+      if (status) status.textContent = 'Error al cargar agenda';
     }
     renderWeek();
     if (state.activeView === 'home') renderHome();
@@ -804,9 +771,6 @@
       if (payload?.operatorsSummary) {
         state.operatorsSummary = payload.operatorsSummary;
       }
-      if (payload?.presence) {
-        state.presence = payload.presence;
-      }
       renderClock(payload);
       renderOperatorTabs();
       if (state.activeView === 'home') renderHome();
@@ -821,32 +785,43 @@
     const nameEl = $('#operator-status-name');
     if (nameEl) nameEl.textContent = selectedOperatorName().toUpperCase();
 
-    const currentState = summary.state || summary.status || 'SIN DATOS';
+    const currentState = summary.state || summary.status || 'JORNADA FINALIZADA';
+    const isWorking = String(currentState).toLowerCase().includes('trabaj');
+    const isPaused = String(currentState).toLowerCase().includes('paus');
+    const displayState = isWorking ? 'TRABAJANDO' : isPaused ? 'EN PAUSA' : 'JORNADA FINALIZADA';
+    const stateClass = isWorking ? 'working' : isPaused ? 'paused' : 'finished';
+
     const shiftEl = $('#shift-state');
     if (shiftEl) {
-      shiftEl.textContent = String(currentState).toUpperCase();
-      shiftEl.className = `shift-state ${String(currentState).toLowerCase().includes('trabaj') ? 'working' : String(currentState).toLowerCase().includes('paus') ? 'paused' : ''}`;
+      shiftEl.textContent = displayState;
+      shiftEl.className = `shift-state ${stateClass}`;
     }
 
-    const opPres = state.selectedOperator !== 'all' ? (state.presence[state.selectedOperator] || {}) : {};
-    const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
-    const presLabel = state.selectedOperator === 'all'
-      ? '—'
-      : formatPresenceRelative(opPres.lastSeenAt, isConnected);
+    const inEl = $('#today-in');
+    if (inEl) inEl.textContent = summary.firstEntry || summary.in || '—';
 
-    const presElem = $('#presence-state');
-    if (presElem) {
-      presElem.textContent = presLabel.toUpperCase();
-      presElem.className = `presence-state ${isConnected ? 'connected' : 'disconnected'}`;
-    }
+    const outEl = $('#today-out');
+    if (outEl) outEl.textContent = summary.lastExit || summary.out || '—';
 
     const workedEl = $('#today-worked');
-    if (workedEl) workedEl.textContent = summary.worked || summary.total || '—';
+    if (workedEl) workedEl.textContent = summary.worked || summary.total || '0h 0m';
 
     const clockBody = $('#clock-body');
     if (clockBody) {
       const rows = state.clock;
-      clockBody.innerHTML = rows.length ? rows.map((r) => `<tr><td>${esc(r.date || r.fecha || '—')}</td><td>${esc(r.in || r.entrada || '—')}</td><td>${esc(r.pauses || r.pausas || '—')}</td><td>${esc(r.out || r.salida || '—')}</td><td>${esc(r.total || '—')}</td><td>${esc(r.status || r.estado || '—')}</td></tr>`).join('') : '<tr><td colspan="6">Sin registros disponibles.</td></tr>';
+      clockBody.innerHTML = rows.length ? rows.map((r) => {
+        const rowState = String(r.status || r.estado || 'FUERA').toUpperCase();
+        const rowStateLabel = rowState.includes('TRABAJ') ? 'TRABAJANDO' : rowState.includes('PAUS') ? 'EN PAUSA' : 'JORNADA FINALIZADA';
+        const rowClass = rowState.includes('TRABAJ') ? 'ok' : rowState.includes('PAUS') ? 'warn' : 'muted';
+        return `<tr>
+          <td>${esc(r.date || r.fecha || '—')}</td>
+          <td>${esc(r.in || r.entrada || '—')}</td>
+          <td>${esc(r.pauses || r.pausas || '—')}</td>
+          <td>${esc(r.out || r.salida || '—')}</td>
+          <td>${esc(r.total || '—')}</td>
+          <td><span class="badge ${rowClass}">${esc(rowStateLabel)}</span></td>
+        </tr>`;
+      }).join('') : '<tr><td colspan="6">Sin registros disponibles.</td></tr>';
     }
   }
 

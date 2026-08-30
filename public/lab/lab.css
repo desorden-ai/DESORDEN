@@ -380,42 +380,29 @@ button {
   letter-spacing: 0.04em;
 }
 
-.presence-dot {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 2px solid #080808;
-  z-index: 2;
-}
-
-.presence-dot.connected {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.7);
-}
-
-.presence-dot.disconnected {
-  background: #555555;
-}
-
 /* VISUAL STATE RINGS */
-.operator-chip.state-working .operator-chip-avatar {
-  border-color: var(--green);
-  box-shadow: 0 0 7px rgba(71, 184, 129, 0.45);
+.operator-chip.state-working .operator-chip-avatar,
+.operator-chip-avatar.state-working {
+  border-color: #22c55e;
+  box-shadow: 0 0 7px rgba(34, 197, 94, 0.45);
 }
 
-.operator-chip.state-paused .operator-chip-avatar {
-  border-color: var(--accent);
-  box-shadow: 0 0 7px rgba(255, 138, 0, 0.45);
+.operator-chip.state-paused .operator-chip-avatar,
+.operator-chip-avatar.state-paused {
+  border-color: #f59e0b;
+  box-shadow: 0 0 7px rgba(245, 158, 11, 0.45);
 }
 
-.operator-chip.state-inactive .operator-chip-avatar {
+.operator-chip.state-finished .operator-chip-avatar,
+.operator-chip.state-inactive .operator-chip-avatar,
+.operator-chip-avatar.state-finished,
+.operator-chip-avatar.state-inactive {
   border-color: #444;
+  box-shadow: none;
 }
 
-.operator-chip.state-disabled {
+.operator-chip.state-disabled,
+.operator-chip-avatar.state-disabled {
   opacity: 0.4;
 }
 
@@ -432,41 +419,22 @@ button {
   letter-spacing: 0.04em;
 }
 
-.operator-chip-info .work-status {
+.work-status {
   font-size: 9.5px;
   font-weight: 700;
 }
 
-.operator-chip-info .work-status.state-working {
-  color: var(--green);
-}
-
-.operator-chip-info .work-status.state-paused {
-  color: var(--accent);
-}
-
-.operator-chip-info .work-status.state-inactive {
-  color: #888;
-}
-
-.operator-chip-info .presence-status {
-  font-size: 8.5px;
-  color: #666;
-}
-
-.operator-chip-info .presence-status.connected {
+.work-status.state-working {
   color: #22c55e;
 }
 
-.operator-chip-info .presence-status.disconnected {
-  color: #777;
+.work-status.state-paused {
+  color: #f59e0b;
 }
 
-.presence-state.connected {
-  color: #22c55e;
-}
-
-.presence-state.disconnected {
+.work-status.state-finished,
+.work-status.state-inactive,
+.work-status.state-disabled {
   color: #888;
 }
 
@@ -660,28 +628,34 @@ button {
   border-color: #555;
 }
 
-.summary-grid {
+.summary-grid, .clock-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
 
-.summary-grid article {
+.summary-grid article, .clock-summary-grid article, .clock-summary-grid .stat-card {
   border: 1px solid var(--line);
   background: #050505;
   padding: 15px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  border-radius: 6px;
 }
 
-.summary-grid span {
+.summary-grid span, .clock-summary-grid span {
   font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   color: #666;
 }
 
-.summary-grid strong {
-  font-size: 18px;
+.summary-grid strong, .clock-summary-grid strong {
+  font-size: 16px;
+  font-weight: 850;
+  color: #fff;
 }
 
 .table-wrap {
