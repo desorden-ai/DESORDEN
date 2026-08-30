@@ -32,6 +32,7 @@
         <button class="nav-item" data-view="clock">FICHAJES</button>
         <button class="nav-item" data-view="photos">FOTOS <span id="photos-badge" class="badge" hidden>0</span></button>
         <button class="nav-item" data-view="chat">CHAT <span id="lab-chat-badge" class="badge" hidden>0</span></button>
+        <button class="nav-item" data-view="tools">HERRAMIENTAS</button>
         <button class="nav-item" data-view="operators">OPERARIOS</button>
       </nav>
       <div class="sidebar-bottom">
@@ -80,8 +81,8 @@
         </div>
         <div class="clock-summary-grid">
           <article class="stat-card"><span>OPERARIO SELECCIONADO</span><strong id="operator-status-name">TODOS</strong></article>
-          <article class="stat-card"><span>ESTADO ACTUAL</span><strong class="shift-state" id="shift-state">SIN DATOS</strong></article>
-          <article class="stat-card"><span>ÚLTIMO EVENTO</span><strong id="last-clock-event">—</strong></article>
+          <article class="stat-card"><span>ESTADO LABORAL</span><strong class="shift-state" id="shift-state">SIN DATOS</strong></article>
+          <article class="stat-card"><span>PRESENCIA</span><strong class="presence-state" id="presence-state">SIN DATOS</strong></article>
           <article class="stat-card"><span>TOTAL TRABAJADO HOY</span><strong id="today-worked">—</strong></article>
         </div>
         <div class="table-wrap">
@@ -93,7 +94,17 @@
       </section>
 
       <section class="view" data-panel="photos" hidden>
-        <div class="section-head"><div><span class="eyebrow">BANDEJA DE OFICINA</span><h2>Fotos</h2><p>Imágenes enviadas desde DESORDEN SAT.</p></div><input class="search" id="photo-search" type="search" placeholder="Buscar SA, cliente o nota" /></div>
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">BANDEJA DE OFICINA</span>
+            <h2>Fotos</h2>
+            <p>Imágenes enviadas desde DESORDEN SAT.</p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input class="search" id="photo-search" type="search" placeholder="Buscar SA, cliente o nota" />
+            <a class="ghost" id="open-drive-photos-btn" href="https://drive.google.com/drive/search?q=DESORDEN%20SAT%20TRABAJOS" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;padding:8px 12px;font-size:11px;font-weight:700;border-radius:6px;white-space:nowrap;">📁 CARPETA DRIVE ↗</a>
+          </div>
+        </div>
         <div class="photo-grid" id="photo-grid"><div class="empty">Sin fotos recibidas</div></div>
       </section>
 
@@ -114,6 +125,63 @@
             <input id="lab-chat-input" type="text" placeholder="Escribe un mensaje al equipo desde la oficina…" maxlength="2000" autocomplete="off" />
             <button class="primary" type="submit">ENVIAR</button>
           </form>
+        </div>
+      </section>
+
+      <section class="view" data-panel="tools" hidden>
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">OFICINA CENTRAL</span>
+            <h2>Herramientas de Oficina</h2>
+            <p>Acceso rápido a los recursos y bases de datos canónicas.</p>
+          </div>
+        </div>
+
+        <div class="tools-grid">
+          <a class="tool-link-card" id="tool-agenda-sheet" href="https://docs.google.com/spreadsheets/d/1dQJlJoCxlhOvBgQ-92EF1LPOL5szx6SyHEN8QsL9SR0/edit#gid=0" target="_blank" rel="noopener noreferrer">
+            <div class="tool-icon">📊</div>
+            <div class="tool-info">
+              <strong>AGENDA SHEET</strong>
+              <span>Hoja principal AGENDA_PANASONIC en Google Sheets</span>
+            </div>
+            <div class="tool-action">ABRIR ↗</div>
+          </a>
+
+          <a class="tool-link-card" id="tool-clock-sheet" href="https://docs.google.com/spreadsheets/d/1dQJlJoCxlhOvBgQ-92EF1LPOL5szx6SyHEN8QsL9SR0/edit" target="_blank" rel="noopener noreferrer">
+            <div class="tool-icon">⏱️</div>
+            <div class="tool-info">
+              <strong>FICHAJES</strong>
+              <span>Pestaña de control horario y registros en Google Sheets</span>
+            </div>
+            <div class="tool-action">ABRIR ↗</div>
+          </a>
+
+          <a class="tool-link-card" id="tool-operators-sheet" href="https://docs.google.com/spreadsheets/d/1dQJlJoCxlhOvBgQ-92EF1LPOL5szx6SyHEN8QsL9SR0/edit" target="_blank" rel="noopener noreferrer">
+            <div class="tool-icon">👥</div>
+            <div class="tool-info">
+              <strong>OPERARIOS</strong>
+              <span>Pestaña de operarios y permisos en Google Sheets</span>
+            </div>
+            <div class="tool-action">ABRIR ↗</div>
+          </a>
+
+          <a class="tool-link-card" id="tool-photos-drive" href="https://drive.google.com/drive/search?q=DESORDEN%20SAT%20TRABAJOS" target="_blank" rel="noopener noreferrer">
+            <div class="tool-icon">📁</div>
+            <div class="tool-info">
+              <strong>FOTOS DE TRABAJO</strong>
+              <span>Carpeta canónica DESORDEN SAT / TRABAJOS en Google Drive</span>
+            </div>
+            <div class="tool-action">ABRIR ↗</div>
+          </a>
+
+          <a class="tool-link-card" id="tool-drive-root" href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">
+            <div class="tool-icon">☁️</div>
+            <div class="tool-info">
+              <strong>DRIVE PRINCIPAL</strong>
+              <span>Almacenamiento en la nube de oficina</span>
+            </div>
+            <div class="tool-action">ABRIR ↗</div>
+          </a>
         </div>
       </section>
 

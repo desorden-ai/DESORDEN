@@ -358,7 +358,6 @@ button {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,6 +378,26 @@ button {
   font-weight: 800;
   color: #aaa;
   letter-spacing: 0.04em;
+}
+
+.presence-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #080808;
+  z-index: 2;
+}
+
+.presence-dot.connected {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.7);
+}
+
+.presence-dot.disconnected {
+  background: #555555;
 }
 
 /* VISUAL STATE RINGS */
@@ -413,21 +432,42 @@ button {
   letter-spacing: 0.04em;
 }
 
-.operator-chip-info span {
-  font-size: 9px;
-  color: #666;
+.operator-chip-info .work-status {
+  font-size: 9.5px;
+  font-weight: 700;
 }
 
-.operator-chip.active .operator-chip-info span {
-  color: #888;
-}
-
-.operator-chip.state-working .operator-chip-info span {
+.operator-chip-info .work-status.state-working {
   color: var(--green);
 }
 
-.operator-chip.state-paused .operator-chip-info span {
+.operator-chip-info .work-status.state-paused {
   color: var(--accent);
+}
+
+.operator-chip-info .work-status.state-inactive {
+  color: #888;
+}
+
+.operator-chip-info .presence-status {
+  font-size: 8.5px;
+  color: #666;
+}
+
+.operator-chip-info .presence-status.connected {
+  color: #22c55e;
+}
+
+.operator-chip-info .presence-status.disconnected {
+  color: #777;
+}
+
+.presence-state.connected {
+  color: #22c55e;
+}
+
+.presence-state.disconnected {
+  color: #888;
 }
 
 .agenda-layout {
@@ -1002,3 +1042,81 @@ dialog::backdrop {
 .lab-chat-input-form input:focus {
   border-color: var(--accent);
 }
+
+/* ==========================================================================
+   OFFICE TOOLS SECTION
+   ========================================================================== */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.tool-link-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #0d0d0d;
+  border: 1px solid #1f1f1f;
+  border-radius: 10px;
+  padding: 16px;
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.15s ease;
+}
+
+.tool-link-card:hover {
+  background: #141414;
+  border-color: #383838;
+  transform: translateY(-2px);
+}
+
+.tool-icon {
+  font-size: 22px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: #181818;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.tool-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tool-info strong {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.tool-info span {
+  font-size: 10px;
+  color: #777;
+  line-height: 1.3;
+}
+
+.tool-action {
+  font-size: 10px;
+  font-weight: 800;
+  color: #888;
+  background: #161616;
+  border: 1px solid #282828;
+  padding: 4px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.tool-link-card:hover .tool-action {
+  color: #fff;
+  border-color: #444;
+}
+

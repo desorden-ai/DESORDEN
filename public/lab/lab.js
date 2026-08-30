@@ -9,9 +9,12 @@
     selectedOperator: 'all',
     operators: [],
     operatorsSummary: {},
+    presence: {},
     agenda: [],
     clock: [],
     photos: [],
+    chatMessages: [],
+    activeView: 'agenda',
     period: 'today',
   };
 
@@ -50,6 +53,19 @@
     return (name.slice(0, 2) || 'OP').toUpperCase();
   }
 
+  function formatPresenceRelative(lastSeenAt, isConnected) {
+    if (!lastSeenAt) return 'DESCONECTADO';
+    const ms = Date.now() - new Date(lastSeenAt).getTime();
+    if (isNaN(ms) || ms < 0) return isConnected ? 'CONECTADO · ahora' : 'DESCONECTADO';
+    if (ms < 90000) return 'CONECTADO · ahora';
+    const mins = Math.floor(ms / 60000);
+    if (mins < 60) return `DESCONECTADO · hace ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `DESCONECTADO · hace ${hours} h`;
+    const days = Math.floor(hours / 24);
+    return `DESCONECTADO · hace ${days} d`;
+  }
+
   async function sha256(text) {
     const bytes = new TextEncoder().encode(text);
     const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -58,23 +74,31 @@
 
   async function api(path, options = {}) {
     const token = sessionStorage.getItem(SESSION_KEY) || '';
-    const response = await fetch(`${API}${path}`, {
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) },
-      ...options,
-    });
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new Error(text || `HTTP ${response.status}`);
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API}${path}`, { ...options, headers });
+    if (res.status === 401) {
+      sessionStorage.removeItem(SESSION_KEY);
+      location.reload();
+      throw new Error('Sesión expirada');
     }
-    if (response.status === 204) return null;
-    return response.json();
+    if (!res.ok) {
+      const errorBody = await res.json().catch(() => ({}));
+      throw new Error(errorBody.error || `HTTP ${res.status}`);
+    }
+    return res.json();
   }
 
-  function setConnection(ok, text) {
+  function setConnection(isOnline, label = '') {
     const el = $('#connection-state');
-    el.textContent = ok ? `● ${text || 'CONECTADO'}` : `● ${text || 'SIN CONECTAR'}`;
-    el.classList.toggle('online', ok);
+    if (!el) return;
+    if (isOnline) {
+      el.className = 'connection ok';
+      el.textContent = '● CONECTADO';
+    } else {
+      el.className = 'connection error';
+      el.textContent = `● ${label || 'SIN CONEXIÓN'}`;
+    }
   }
 
   function enterApp() {
@@ -88,22 +112,22 @@
     event.preventDefault();
     const username = $('#login-user').value.trim();
     const password = $('#login-pass').value;
+    const msg = $('#login-message');
+    msg.textContent = 'Verificando…';
     try {
-      const response = await fetch(`${API}/auth/login`, {
+      const res = await api('/auth/login', {
         method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-      const result = await response.json();
-      if (!response.ok || !result.sessionToken) throw new Error(result.error || 'Credenciales no válidas');
-      sessionStorage.setItem(SESSION_KEY, result.sessionToken);
-    } catch {
-      $('#login-message').textContent = 'Usuario o contraseña incorrectos.';
-      return;
+      if (res.ok && res.token) {
+        sessionStorage.setItem(SESSION_KEY, res.token);
+        enterApp();
+      } else {
+        msg.textContent = res.error || 'Credenciales no válidas';
+      }
+    } catch (error) {
+      msg.textContent = error.message;
     }
-    $('#login-pass').value = '';
-    enterApp();
   }
 
   function logout() {
@@ -123,6 +147,7 @@
       clock: ['REGISTRO HORARIO', 'Fichajes'],
       photos: ['BANDEJA DE OFICINA', 'Fotos'],
       chat: ['COMUNICACIÓN', 'Chat Equipo'],
+      tools: ['OFICINA CENTRAL', 'Herramientas de Oficina'],
       operators: ['EQUIPO Y ACCESOS', 'Operarios'],
     };
     state.activeView = name;
@@ -149,6 +174,7 @@
       phone: raw.phone || raw.telefono || raw['TELÉFONO'] || '',
       status: raw.status || raw.estado || raw.ESTADO || 'active',
       photoUrl: raw.photoUrl || raw.PHOTO_URL || '',
+      presence: raw.presence || null,
       canCreateJobs: Boolean(raw.canCreateJobs ?? raw.CAN_CREATE_JOBS ?? false),
       panasonicAccess: Boolean(raw.panasonicAccess ?? raw.PANASONIC_ACCESS ?? false),
     };
@@ -168,8 +194,10 @@
       address: raw.address || raw.direccion || '',
       date: raw.date || raw.fecha || (split && !Number.isNaN(split.getTime()) ? isoDate(split) : ''),
       time: raw.time || raw.hora || (split && !Number.isNaN(split.getTime()) ? split.toTimeString().slice(0, 5) : ''),
-      observations: raw.observations || raw.observaciones || raw.notes || '',
-      status: raw.status || raw.estado || '',
+      model: raw.model || raw.modelo || '',
+      state: raw.state || raw.estado || 'Pendiente',
+      priority: raw.priority || raw.prioridad || 'Normal',
+      observations: raw.observations || raw.observaciones || '',
     };
   }
 
@@ -177,6 +205,9 @@
     try {
       const payload = await api('/operators');
       const list = Array.isArray(payload) ? payload : payload?.operators || payload?.items || [];
+      if (payload?.presence) {
+        state.presence = payload.presence;
+      }
       state.operators = list.map(normalizeOperator).filter((x) => x.operatorId);
       setConnection(true);
     } catch (error) {
@@ -212,6 +243,9 @@
     state.operators.forEach((op) => {
       const isSelected = state.selectedOperator === op.operatorId;
       const opSum = state.operatorsSummary[op.operatorId] || {};
+      const opPres = state.presence[op.operatorId] || op.presence || {};
+      const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
+
       const stateClass = op.status === 'disabled'
         ? 'state-disabled'
         : opSum.state === 'TRABAJANDO'
@@ -228,16 +262,19 @@
         ? 'EN PAUSA'
         : 'FUERA';
 
+      const presenceLabel = formatPresenceRelative(opPres.lastSeenAt, isConnected);
       const initials = getOperatorInitials(op.name);
 
       chips.push(`
         <button type="button" class="operator-chip ${isSelected ? 'active' : ''} ${stateClass}" data-operator-id="${esc(op.operatorId)}">
-          <div class="operator-chip-avatar">
+          <div class="operator-chip-avatar ${stateClass}">
             ${op.photoUrl ? `<img src="${esc(op.photoUrl)}" alt="${esc(op.name)}" />` : `<span class="initials">${esc(initials)}</span>`}
+            <span class="presence-dot ${isConnected ? 'connected' : 'disconnected'}" title="${isConnected ? 'Conectado ahora' : 'Desconectado'}"></span>
           </div>
           <div class="operator-chip-info">
             <strong>${esc(op.name).toUpperCase()}</strong>
-            <span>${esc(stateLabel)}</span>
+            <span class="work-status ${stateClass}">${esc(stateLabel)}</span>
+            <span class="presence-status ${isConnected ? 'connected' : 'disconnected'}">${esc(presenceLabel)}</span>
           </div>
         </button>
       `);
@@ -357,6 +394,9 @@
       if (payload?.operatorsSummary) {
         state.operatorsSummary = payload.operatorsSummary;
       }
+      if (payload?.presence) {
+        state.presence = payload.presence;
+      }
       renderClock(payload);
       renderOperatorTabs();
     } catch {
@@ -371,12 +411,20 @@
     const currentState = summary.state || summary.status || 'SIN DATOS';
     $('#shift-state').textContent = String(currentState).toUpperCase();
     $('#shift-state').className = `shift-state ${String(currentState).toLowerCase().includes('trabaj') ? 'working' : String(currentState).toLowerCase().includes('paus') ? 'paused' : ''}`;
-    $('#last-clock-event').textContent = summary.last || summary.lastEvent || '—';
+
+    const opPres = state.selectedOperator !== 'all' ? (state.presence[state.selectedOperator] || {}) : {};
+    const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
+    const presLabel = state.selectedOperator === 'all'
+      ? '—'
+      : formatPresenceRelative(opPres.lastSeenAt, isConnected);
+
+    const presElem = $('#presence-state');
+    if (presElem) {
+      presElem.textContent = presLabel.toUpperCase();
+      presElem.className = `presence-state ${isConnected ? 'connected' : 'disconnected'}`;
+    }
+
     $('#today-worked').textContent = summary.worked || summary.total || '—';
-    $('#clock-state').textContent = String(currentState).toUpperCase();
-    $('#clock-worked').textContent = summary.worked || summary.total || '—';
-    $('#clock-paused').textContent = summary.paused || '—';
-    $('#clock-last').textContent = summary.last || summary.lastEvent || '—';
     const rows = state.clock;
     $('#clock-body').innerHTML = rows.length ? rows.map((r) => `<tr><td>${esc(r.date || r.fecha || '—')}</td><td>${esc(r.in || r.entrada || '—')}</td><td>${esc(r.pauses || r.pausas || '—')}</td><td>${esc(r.out || r.salida || '—')}</td><td>${esc(r.total || '—')}</td><td>${esc(r.status || r.estado || '—')}</td></tr>`).join('') : '<tr><td colspan="6">Sin registros disponibles.</td></tr>';
   }
