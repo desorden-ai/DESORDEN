@@ -119,8 +119,9 @@
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
-      if (res.ok && res.token) {
-        sessionStorage.setItem(SESSION_KEY, res.token);
+      const token = res.token || res.sessionToken;
+      if (res.ok && token) {
+        sessionStorage.setItem(SESSION_KEY, token);
         enterApp();
       } else {
         msg.textContent = res.error || 'Credenciales no válidas';
