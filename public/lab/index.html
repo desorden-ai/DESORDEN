@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>DESORDEN · Oficina SAT</title>
+  <link rel="stylesheet" href="/lab/lab.css" />
+</head>
+<body>
+  <section class="login-screen" id="login-screen" aria-label="Acceso de oficina">
+    <form class="login-card" id="login-form">
+      <div class="login-brand">DESORDEN</div>
+      <p>OFICINA · SAT</p>
+      <label>Usuario<input id="login-user" autocomplete="username" required /></label>
+      <label>Contraseña<input id="login-pass" type="password" autocomplete="current-password" required /></label>
+      <button class="primary" type="submit">ACCEDER</button>
+      <span class="form-message" id="login-message"></span>
+    </form>
+  </section>
+
+  <div class="app-shell" id="app-shell" hidden>
+    <aside class="sidebar">
+      <div>
+        <div class="brand">DESORDEN</div>
+        <span class="brand-sub">OFICINA · SAT</span>
+      </div>
+      <nav class="nav" aria-label="Secciones">
+        <button class="nav-item active" data-view="agenda">AGENDA</button>
+        <button class="nav-item" data-view="clock">FICHAJES</button>
+        <button class="nav-item" data-view="photos">FOTOS <span id="photos-badge" class="badge" hidden>0</span></button>
+        <button class="nav-item" data-view="chat">CHAT <span id="lab-chat-badge" class="badge" hidden>0</span></button>
+        <button class="nav-item" data-view="operators">OPERARIOS</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span id="connection-state" class="connection">● SIN CONECTAR</span>
+        <button class="text-button" id="logout-button" type="button">SALIR</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow" id="view-eyebrow">PLANIFICACIÓN</span>
+          <h1 id="view-title">Agenda</h1>
+        </div>
+        <div class="top-actions">
+          <div class="now"><strong id="now-time">--:--</strong><span id="now-date">--</span></div>
+          <button class="icon-button" id="reload-button" type="button" title="Actualizar">↻</button>
+        </div>
+      </header>
+
+      <!-- Compact Operator Strip -->
+      <div class="operator-tabs" id="operator-tabs"><button type="button" class="operator-chip active" data-operator-id="all"><div class="operator-chip-avatar"><span class="initials">ALL</span></div><div class="operator-chip-info"><strong>TODOS</strong><span>Ver todo</span></div></button></div>
+
+      <section class="view active" data-panel="agenda">
+        <div class="toolbar">
+          <div class="week-controls">
+            <button class="ghost" id="prev-week" type="button">←</button>
+            <strong id="week-range">SEMANA</strong>
+            <button class="ghost" id="next-week" type="button">→</button>
+            <button class="ghost" id="this-week" type="button">HOY</button>
+          </div>
+          <button class="primary" id="new-job-button" type="button">＋ NUEVO TRABAJO</button>
+        </div>
+        <div class="status-line" id="agenda-status">Cargando agenda…</div>
+        <div class="week-grid" id="week-grid"></div>
+      </section>
+
+      <section class="view" data-panel="clock" hidden>
+        <div class="section-head">
+          <div><span class="eyebrow">CONTROL HORARIO</span><h2>Fichajes</h2><p>Registro de jornada laboral de operarios.</p></div>
+          <div class="period-controls">
+            <button class="ghost active" data-period="today" type="button">HOY</button>
+            <button class="ghost" data-period="week" type="button">SEMANA</button>
+            <button class="ghost" data-period="month" type="button">MES</button>
+          </div>
+        </div>
+        <div class="clock-summary-grid">
+          <article class="stat-card"><span>OPERARIO SELECCIONADO</span><strong id="operator-status-name">TODOS</strong></article>
+          <article class="stat-card"><span>ESTADO ACTUAL</span><strong class="shift-state" id="shift-state">SIN DATOS</strong></article>
+          <article class="stat-card"><span>ÚLTIMO EVENTO</span><strong id="last-clock-event">—</strong></article>
+          <article class="stat-card"><span>TOTAL TRABAJADO HOY</span><strong id="today-worked">—</strong></article>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Fecha</th><th>Entrada</th><th>Pausas</th><th>Salida</th><th>Total trabajado</th><th>Estado</th></tr></thead>
+            <tbody id="clock-body"><tr><td colspan="6">Cargando fichajes…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" data-panel="photos" hidden>
+        <div class="section-head"><div><span class="eyebrow">BANDEJA DE OFICINA</span><h2>Fotos</h2><p>Imágenes enviadas desde DESORDEN SAT.</p></div><input class="search" id="photo-search" type="search" placeholder="Buscar SA, cliente o nota" /></div>
+        <div class="photo-grid" id="photo-grid"><div class="empty">Sin fotos recibidas</div></div>
+      </section>
+
+      <section class="view" data-panel="chat" hidden>
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">COMUNICACIÓN EN TIEMPO REAL</span>
+            <h2>Chat Equipo</h2>
+            <p>Canal directo entre técnicos y oficina central.</p>
+          </div>
+          <button class="ghost" id="refresh-chat-button" type="button">↻ REFRESCAR</button>
+        </div>
+        <div class="lab-chat-container">
+          <div class="lab-chat-messages" id="lab-chat-messages">
+            <div class="empty">Cargando mensajes…</div>
+          </div>
+          <form class="lab-chat-input-form" id="lab-chat-form">
+            <input id="lab-chat-input" type="text" placeholder="Escribe un mensaje al equipo desde la oficina…" maxlength="2000" autocomplete="off" />
+            <button class="primary" type="submit">ENVIAR</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="view" data-panel="operators" hidden>
+        <div class="section-head"><div><span class="eyebrow">EQUIPO Y ACCESOS</span><h2>Operarios</h2><p>La oficina crea usuarios, asigna contraseñas y controla sus datos.</p></div><button class="primary" id="new-operator-button" type="button">＋ NUEVO OPERARIO</button></div>
+        <div class="notice">Cada operario tiene un <strong>operatorId</strong> estable. La contraseña nunca se muestra después de guardarla.</div>
+        <div class="table-wrap"><table><thead><tr><th>Operario</th><th>Usuario</th><th>Teléfono</th><th>Permisos</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="operators-body"><tr><td colspan="6">Cargando operarios…</td></tr></tbody></table></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="job-dialog">
+    <form id="job-form" class="dialog-form">
+      <div class="dialog-head"><div><span class="eyebrow">AGENDA</span><h2 id="job-dialog-title">Nuevo trabajo</h2></div><button class="close" data-close="job-dialog" type="button">×</button></div>
+      <input type="hidden" name="id" />
+      <div class="form-grid">
+        <label>SA<input name="sa" required /></label>
+        <label>Tipo<select name="type"><option>Avería</option><option>Mantenimiento</option><option>Puesta en marcha</option><option>Otro</option></select></label>
+        <label class="span-2">Operario<select name="operatorId" id="job-operator" required></select></label>
+        <label class="span-2">Cliente<input name="client" required /></label>
+        <label>Teléfono<input name="phone" /></label><label>Población<input name="city" /></label>
+        <label class="span-2">Dirección<input name="address" /></label>
+        <label>Fecha<input name="date" type="date" required /></label><label>Hora<input name="time" type="time" required /></label>
+        <label class="span-2">Observaciones<textarea name="observations" rows="4"></textarea></label>
+      </div>
+      <span class="form-message" id="job-message"></span>
+      <div class="dialog-actions"><button class="ghost" data-close="job-dialog" type="button">CANCELAR</button><button class="primary" type="submit">GUARDAR</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="operator-dialog">
+    <form id="operator-form" class="dialog-form">
+      <div class="dialog-head"><div><span class="eyebrow">ACCESO SAT</span><h2 id="operator-dialog-title">Nuevo operario</h2></div><button class="close" data-close="operator-dialog" type="button">×</button></div>
+      <input type="hidden" name="operatorId" />
+      <div class="form-grid">
+        <label class="span-2">Nombre<input name="name" required /></label>
+        <label>Usuario SAT<input name="username" required /></label><label>Teléfono<input name="phone" /></label>
+        <label class="span-2">Contraseña nueva<input name="password" type="password" minlength="4" autocomplete="new-password" /></label>
+        <label class="span-2 checkbox-label">
+          <input type="checkbox" name="canCreateJobs" id="operator-can-create-jobs" />
+          <span>Puede crear sus propios trabajos</span>
+        </label>
+        <label class="span-2 checkbox-label">
+          <input type="checkbox" name="panasonicAccess" id="operator-panasonic-access" />
+          <span>Acceso Agenda Panasonic (David)</span>
+        </label>
+      </div>
+      <span class="form-message" id="operator-message"></span>
+      <div class="dialog-actions"><button class="ghost" data-close="operator-dialog" type="button">CANCELAR</button><button class="primary" type="submit">GUARDAR</button></div>
+    </form>
+  </dialog>
+
+  <script src="/lab/lab.js" defer></script>
+</body>
+</html>
