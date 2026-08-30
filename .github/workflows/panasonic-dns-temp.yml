@@ -1,0 +1,58 @@
+name: Configure Panasonic DNS
+on:
+  push:
+    branches: [DESORDEN]
+  workflow_dispatch:
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Mark pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            --data '{"state":"pending","context":"panasonic/dns","description":"Configuring panasonic.desorden.cat"}' >/dev/null
+      - name: Configure panasonic.desorden.cat
+        id: dns
+        env:
+          RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          compact="$(printf '%s' "$RAW_TOKEN" | tr -d '\r\n')"
+          compact="$(printf '%s' "$compact" | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//')"
+          if [[ "$compact" =~ [Bb]earer[[:space:]]+([^\"\047[:space:]]+) ]]; then TOKEN="${BASH_REMATCH[1]}";
+          elif [[ "$compact" =~ CLOUDFLARE_API_TOKEN[[:space:]]*=[[:space:]]*[\"\047]?([^\"\047[:space:]]+) ]]; then TOKEN="${BASH_REMATCH[1]}";
+          else TOKEN="$compact"; TOKEN="${TOKEN#\"}"; TOKEN="${TOKEN%\"}"; TOKEN="${TOKEN#\'}"; TOKEN="${TOKEN%\'}"; fi
+          echo "::add-mask::$TOKEN"
+          curl --fail-with-body --silent --show-error "https://api.cloudflare.com/client/v4/zones?name=desorden.cat&account.id=$ACCOUNT_ID" -H "Authorization: Bearer $TOKEN" > /tmp/zones.json
+          ZONE_ID="$(jq -r '.result[0].id // empty' /tmp/zones.json)"; test -n "$ZONE_ID"
+          curl --fail-with-body --silent --show-error "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=panasonic.desorden.cat" -H "Authorization: Bearer $TOKEN" > /tmp/records.json
+          RECORD_ID="$(jq -r '.result[0].id // empty' /tmp/records.json)"
+          BODY='{"type":"CNAME","name":"panasonic.desorden.cat","content":"proxy-v2.appdeploy.ai","ttl":1,"proxied":false}'
+          if [ -n "$RECORD_ID" ]; then METHOD=PUT; URL="https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID"; else METHOD=POST; URL="https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"; fi
+          curl --fail-with-body --silent --show-error -X "$METHOD" "$URL" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' --data "$BODY" > /tmp/result.json
+          jq -e '.success == true' /tmp/result.json >/dev/null
+          jq '{name:.result.name,type:.result.type,content:.result.content,proxied:.result.proxied}' /tmp/result.json
+      - name: Publish result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DNS_OUTCOME: ${{ steps.dns.outcome }}
+        run: |
+          if [ "$DNS_OUTCOME" = success ]; then state=success; description='Panasonic DNS configured'; else state=failure; description='Panasonic DNS token lacks required permission'; fi
+          jq -nc --arg state "$state" --arg description "$description" '{state:$state,context:"panasonic/dns",description:$description}' > /tmp/status.json
+          curl --fail-with-body --silent --show-error -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            --data-binary @/tmp/status.json >/dev/null
