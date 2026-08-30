@@ -9,6 +9,10 @@
     {
       "pattern": "www.desorden.cat/*",
       "zone_name": "desorden.cat"
+    },
+    {
+      "pattern": "desorden.cat/*",
+      "zone_name": "desorden.cat"
     }
   ],
   "assets": {
