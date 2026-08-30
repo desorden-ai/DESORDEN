@@ -7,6 +7,7 @@
   const state = {
     weekStart: startOfWeek(new Date()),
     selectedOperator: 'all',
+    drawerOperator: null,
     operators: [],
     operatorsSummary: {},
     presence: {},
@@ -14,13 +15,116 @@
     clock: [],
     photos: [],
     chatMessages: [],
-    activeView: 'agenda',
+    activeView: 'home',
     period: 'today',
   };
 
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+  // ==================================================
+  // GLOBAL FEEDBACK SYSTEM
+  // ==================================================
+  let feedbackTimer = null;
+
+  function showLoading(title = 'CARGANDO…', detail = '') {
+    clearTimeout(feedbackTimer);
+    const box = $('#global-feedback');
+    const dots = $('#feedback-dots');
+    const icon = $('#feedback-icon');
+    const titleEl = $('#feedback-title');
+    const detailEl = $('#feedback-detail');
+    const retryBtn = $('#feedback-retry-btn');
+    if (!box) return;
+
+    box.className = 'global-feedback state-loading';
+    if (dots) dots.hidden = false;
+    if (icon) icon.hidden = true;
+    if (titleEl) titleEl.textContent = title;
+    if (detailEl) {
+      detailEl.textContent = detail;
+      detailEl.hidden = !detail;
+    }
+    if (retryBtn) retryBtn.hidden = true;
+    box.hidden = false;
+  }
+
+  function showSuccess(title = 'DATOS ACTUALIZADOS', duration = 2000) {
+    clearTimeout(feedbackTimer);
+    const box = $('#global-feedback');
+    const dots = $('#feedback-dots');
+    const icon = $('#feedback-icon');
+    const titleEl = $('#feedback-title');
+    const detailEl = $('#feedback-detail');
+    const retryBtn = $('#feedback-retry-btn');
+    if (!box) return;
+
+    box.className = 'global-feedback state-success';
+    if (dots) dots.hidden = true;
+    if (icon) {
+      icon.textContent = '✓';
+      icon.hidden = false;
+    }
+    if (titleEl) titleEl.textContent = title;
+    if (detailEl) detailEl.hidden = true;
+    if (retryBtn) retryBtn.hidden = true;
+    box.hidden = false;
+
+    if (duration > 0) {
+      feedbackTimer = setTimeout(() => {
+        hideFeedback();
+      }, duration);
+    }
+  }
+
+  function showError(title = 'ERROR', detail = '', retryFn = null) {
+    clearTimeout(feedbackTimer);
+    const box = $('#global-feedback');
+    const dots = $('#feedback-dots');
+    const icon = $('#feedback-icon');
+    const titleEl = $('#feedback-title');
+    const detailEl = $('#feedback-detail');
+    const retryBtn = $('#feedback-retry-btn');
+    if (!box) return;
+
+    box.className = 'global-feedback state-error';
+    if (dots) dots.hidden = true;
+    if (icon) {
+      icon.textContent = '✕';
+      icon.hidden = false;
+    }
+    if (titleEl) titleEl.textContent = title;
+    if (detailEl) {
+      detailEl.textContent = detail;
+      detailEl.hidden = !detail;
+    }
+    if (retryBtn) {
+      if (typeof retryFn === 'function') {
+        retryBtn.hidden = false;
+        retryBtn.onclick = () => {
+          hideFeedback();
+          retryFn();
+        };
+      } else {
+        retryBtn.hidden = true;
+      }
+    }
+    box.hidden = false;
+
+    feedbackTimer = setTimeout(() => {
+      hideFeedback();
+    }, 6000);
+  }
+
+  function hideFeedback() {
+    clearTimeout(feedbackTimer);
+    const box = $('#global-feedback');
+    if (box) box.hidden = true;
+  }
+
+  // ==================================================
+  // DATE & STRING UTILITIES
+  // ==================================================
   function startOfWeek(date) {
     const d = new Date(date);
     const day = d.getDay() || 7;
@@ -66,12 +170,9 @@
     return `DESCONECTADO · hace ${days} d`;
   }
 
-  async function sha256(text) {
-    const bytes = new TextEncoder().encode(text);
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
-    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  }
-
+  // ==================================================
+  // API CLIENT
+  // ==================================================
   async function api(path, options = {}) {
     const token = sessionStorage.getItem(SESSION_KEY) || '';
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -102,32 +203,61 @@
   }
 
   function enterApp() {
-    $('#login-screen').hidden = true;
-    $('#app-shell').hidden = false;
+    const login = $('#login-screen');
+    const shell = $('#app-shell');
+    if (login) login.hidden = true;
+    if (shell) shell.hidden = false;
     updateNow();
     void refreshAll();
   }
 
+  // ==================================================
+  // AUTHENTICATION
+  // ==================================================
   async function handleLogin(event) {
     event.preventDefault();
-    const username = $('#login-user').value.trim();
-    const password = $('#login-pass').value;
+    const userInp = $('#login-user');
+    const passInp = $('#login-pass');
+    const username = userInp?.value.trim() || '';
+    const password = passInp?.value || '';
     const msg = $('#login-message');
-    msg.textContent = 'Verificando…';
+    const submitBtn = $('#login-submit-btn');
+
+    if (userInp) userInp.classList.remove('input-error');
+    if (passInp) passInp.classList.remove('input-error');
+    if (msg) msg.textContent = '';
+    if (submitBtn) submitBtn.disabled = true;
+
+    showLoading('VERIFICANDO ACCESO…');
+
     try {
       const res = await api('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
-      const token = res.token || res.sessionToken;
+      const token = res.sessionToken || res.token;
       if (res.ok && token) {
         sessionStorage.setItem(SESSION_KEY, token);
+        showSuccess('ACCESO CORRECTO', 1200);
         enterApp();
       } else {
-        msg.textContent = res.error || 'Credenciales no válidas';
+        hideFeedback();
+        if (userInp) userInp.classList.add('input-error');
+        if (passInp) passInp.classList.add('input-error');
+        if (msg) msg.textContent = res.error || 'Usuario o contraseña incorrectos';
       }
     } catch (error) {
-      msg.textContent = error.message;
+      hideFeedback();
+      if (userInp) userInp.classList.add('input-error');
+      if (passInp) passInp.classList.add('input-error');
+      const isNetwork = error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('502') || error.message.includes('503');
+      if (msg) {
+        msg.textContent = isNetwork
+          ? 'Servicio temporalmente no disponible (SAT API)'
+          : error.message || 'Usuario o contraseña incorrectos';
+      }
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
     }
   }
 
@@ -138,12 +268,18 @@
 
   function updateNow() {
     const now = new Date();
-    $('#now-time').textContent = fmtDate(now, { hour: '2-digit', minute: '2-digit' });
-    $('#now-date').textContent = fmtDate(now, { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase();
+    const timeEl = $('#now-time');
+    const dateEl = $('#now-date');
+    if (timeEl) timeEl.textContent = fmtDate(now, { hour: '2-digit', minute: '2-digit' });
+    if (dateEl) dateEl.textContent = fmtDate(now, { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase();
   }
 
+  // ==================================================
+  // VIEW SWITCHER
+  // ==================================================
   function switchView(name) {
     const titles = {
+      home: ['PANEL GENERAL', 'Inicio'],
       agenda: ['PLANIFICACIÓN', 'Agenda'],
       clock: ['REGISTRO HORARIO', 'Fichajes'],
       photos: ['BANDEJA DE OFICINA', 'Fotos'],
@@ -158,8 +294,13 @@
       panel.hidden = !active;
       panel.classList.toggle('active', active);
     });
-    $('#view-eyebrow').textContent = titles[name][0];
-    $('#view-title').textContent = titles[name][1];
+
+    const eyebrow = $('#view-eyebrow');
+    const title = $('#view-title');
+    if (eyebrow && titles[name]) eyebrow.textContent = titles[name][0];
+    if (title && titles[name]) title.textContent = titles[name][1];
+
+    if (name === 'home') renderHome();
     if (name === 'agenda') void loadAgenda();
     if (name === 'clock') void loadClock();
     if (name === 'photos') void loadPhotos();
@@ -167,6 +308,9 @@
     if (name === 'operators') renderOperators();
   }
 
+  // ==================================================
+  // OPERATORS & CHIPS
+  // ==================================================
   function normalizeOperator(raw) {
     return {
       operatorId: raw.operatorId || raw.id || raw.operator_id || raw.OPERATOR_ID || '',
@@ -219,6 +363,7 @@
     renderOperatorTabs();
     renderOperators();
     fillOperatorSelect();
+    if (state.activeView === 'home') renderHome();
   }
 
   function renderOperatorTabs() {
@@ -284,15 +429,113 @@
     root.innerHTML = chips.join('');
     root.querySelectorAll('.operator-chip').forEach((btn) => {
       btn.addEventListener('click', () => {
-        state.selectedOperator = btn.dataset.operatorId;
-        renderOperatorTabs();
-        void Promise.all([loadAgenda(), loadClock(), loadPhotos()]);
+        const id = btn.dataset.operatorId;
+        if (id === 'all') {
+          state.selectedOperator = 'all';
+          renderOperatorTabs();
+          closeOperatorDrawer();
+          void Promise.all([loadAgenda(), loadClock(), loadPhotos()]);
+          if (state.activeView === 'home') renderHome();
+        } else {
+          openOperatorDrawer(id);
+        }
       });
     });
   }
 
+  // ==================================================
+  // OPERATOR LATERAL DRAWER
+  // ==================================================
+  function openOperatorDrawer(operatorId) {
+    const op = state.operators.find((x) => x.operatorId === operatorId);
+    if (!op) return;
+    state.drawerOperator = op;
+
+    const opSum = state.operatorsSummary[op.operatorId] || {};
+    const opPres = state.presence[op.operatorId] || op.presence || {};
+    const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
+
+    const stateClass = op.status === 'disabled'
+      ? 'state-disabled'
+      : opSum.state === 'TRABAJANDO'
+      ? 'state-working'
+      : opSum.state === 'PAUSA'
+      ? 'state-paused'
+      : 'state-inactive';
+
+    const stateLabel = op.status === 'disabled'
+      ? 'DESACTIVADO'
+      : opSum.state === 'TRABAJANDO'
+      ? 'TRABAJANDO'
+      : opSum.state === 'PAUSA'
+      ? 'EN PAUSA'
+      : 'FUERA';
+
+    const presenceLabel = formatPresenceRelative(opPres.lastSeenAt, isConnected);
+    const initials = getOperatorInitials(op.name);
+
+    if ($('#drawer-operator-name')) $('#drawer-operator-name').textContent = op.name.toUpperCase();
+    if ($('#drawer-name')) $('#drawer-name').textContent = op.name;
+    if ($('#drawer-username')) $('#drawer-username').textContent = `@${op.username}`;
+    if ($('#drawer-phone')) $('#drawer-phone').textContent = op.phone ? `Tel: ${op.phone}` : 'Tel: —';
+
+    const avatarWrap = $('#drawer-avatar-wrap');
+    if (avatarWrap) avatarWrap.className = `drawer-avatar-wrap ${stateClass}`;
+
+    const avatar = $('#drawer-avatar');
+    if (avatar) {
+      avatar.innerHTML = op.photoUrl
+        ? `<img src="${esc(op.photoUrl)}" alt="${esc(op.name)}" />`
+        : `<span class="initials">${esc(initials)}</span>`;
+    }
+
+    const workEl = $('#drawer-work-status');
+    if (workEl) {
+      workEl.textContent = stateLabel;
+      workEl.className = `work-status ${stateClass}`;
+    }
+
+    const presEl = $('#drawer-presence-status');
+    if (presEl) {
+      presEl.textContent = isConnected ? 'CONECTADO' : 'DESCONECTADO';
+      presEl.className = `presence-status ${isConnected ? 'connected' : 'disconnected'}`;
+    }
+
+    const lastSeenEl = $('#drawer-last-seen');
+    if (lastSeenEl) {
+      lastSeenEl.textContent = presenceLabel;
+    }
+
+    const todayWorkedEl = $('#drawer-today-worked');
+    if (todayWorkedEl) {
+      todayWorkedEl.textContent = opSum.worked || '0h 0m';
+    }
+
+    const badgesEl = $('#drawer-badges');
+    if (badgesEl) {
+      badgesEl.innerHTML = `
+        <span class="badge ${op.canCreateJobs ? 'ok' : 'muted'}">${op.canCreateJobs ? 'CREA TRABAJOS' : 'SOLO LECTURA'}</span>
+        <span class="badge ${op.panasonicAccess ? 'ok' : 'muted'}">${op.panasonicAccess ? 'PANASONIC' : 'GENERAL'}</span>
+      `;
+    }
+
+    const drawer = $('#operator-drawer');
+    const backdrop = $('#drawer-backdrop');
+    if (drawer) drawer.hidden = false;
+    if (backdrop) backdrop.hidden = false;
+  }
+
+  function closeOperatorDrawer() {
+    const drawer = $('#operator-drawer');
+    const backdrop = $('#drawer-backdrop');
+    if (drawer) drawer.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+    state.drawerOperator = null;
+  }
+
   function renderOperators() {
     const body = $('#operators-body');
+    if (!body) return;
     if (!state.operators.length) {
       body.innerHTML = '<tr><td colspan="6">No hay operarios cargados.</td></tr>';
       return;
@@ -325,6 +568,7 @@
 
   function fillOperatorSelect() {
     const select = $('#job-operator');
+    if (!select) return;
     select.innerHTML = '<option value="">Selecciona operario</option>' + state.operators.filter((op) => op.status !== 'disabled').map((op) => `<option value="${esc(op.operatorId)}">${esc(op.name)}</option>`).join('');
   }
 
@@ -332,54 +576,216 @@
     const op = state.operators.find((x) => x.operatorId === id);
     if (!op) return;
     const status = op.status === 'disabled' ? 'active' : 'disabled';
+    showLoading('ACTUALIZANDO ESTADO…');
     try {
       await api(`/operators/${encodeURIComponent(id)}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
       await loadOperators();
+      showSuccess(`OPERARIO ${status === 'active' ? 'ACTIVADO' : 'DESACTIVADO'}`);
     } catch (error) {
-      alert(`No se ha podido cambiar el estado: ${error.message}`);
+      showError('ERROR AL CAMBIAR ESTADO', error.message, () => toggleOperator(id));
     }
   }
 
+  // ==================================================
+  // INICIO / DASHBOARD RENDERING
+  // ==================================================
+  function renderHome() {
+    // 1. Team status list
+    const teamList = $('#home-operators-list');
+    if (teamList) {
+      if (!state.operators.length) {
+        teamList.innerHTML = '<div class="empty">No hay operarios registrados</div>';
+      } else {
+        teamList.innerHTML = state.operators.map((op) => {
+          const opSum = state.operatorsSummary[op.operatorId] || {};
+          const opPres = state.presence[op.operatorId] || op.presence || {};
+          const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
+
+          const stateClass = op.status === 'disabled'
+            ? 'state-disabled'
+            : opSum.state === 'TRABAJANDO'
+            ? 'state-working'
+            : opSum.state === 'PAUSA'
+            ? 'state-paused'
+            : 'state-inactive';
+
+          const stateLabel = op.status === 'disabled'
+            ? 'DESACTIVADO'
+            : opSum.state === 'TRABAJANDO'
+            ? `TRABAJANDO${opSum.worked && opSum.worked !== '0h 0m' ? ` · ${opSum.worked}` : ''}`
+            : opSum.state === 'PAUSA'
+            ? 'EN PAUSA'
+            : 'FUERA';
+
+          const initials = getOperatorInitials(op.name);
+
+          return `
+            <div class="home-operator-card" data-open-drawer="${esc(op.operatorId)}">
+              <div class="operator-chip-avatar ${stateClass}" style="width:36px;height:36px;">
+                ${op.photoUrl ? `<img src="${esc(op.photoUrl)}" alt="${esc(op.name)}" />` : `<span class="initials" style="font-size:12px;">${esc(initials)}</span>`}
+                <span class="presence-dot ${isConnected ? 'connected' : 'disconnected'}"></span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+                <strong style="font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(op.name)}</strong>
+                <span class="work-status ${stateClass}" style="font-size:9px;">${esc(stateLabel)}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        teamList.querySelectorAll('[data-open-drawer]').forEach((card) => {
+          card.addEventListener('click', () => openOperatorDrawer(card.dataset.openDrawer));
+        });
+      }
+    }
+
+    // 2. Today's jobs
+    const today = isoDate(new Date());
+    const todayJobs = state.agenda.filter((j) => j.date === today).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    const todayList = $('#today-list');
+    if (todayList) {
+      if (!todayJobs.length) {
+        todayList.innerHTML = '<div class="empty">Sin trabajos asignados para hoy.</div>';
+      } else {
+        todayList.innerHTML = todayJobs.map((j) => {
+          const op = state.operators.find((x) => x.operatorId === j.operatorId);
+          return `
+            <div class="home-job-item" data-job-id="${esc(j.id)}">
+              <time>${esc(j.time || '--:--')}</time>
+              <div class="job-main">
+                <strong>${esc(j.sa || j.client || 'TRABAJO')}</strong>
+                <span>${esc(j.client || '—')}${j.city ? ` · ${esc(j.city)}` : ''}${op ? ` (${esc(op.name)})` : ''}</span>
+              </div>
+              <span class="badge muted" style="font-size:9px;">${esc(j.type || 'Avería')}</span>
+            </div>
+          `;
+        }).join('');
+        todayList.querySelectorAll('[data-job-id]').forEach((item) => {
+          item.addEventListener('click', () => openJobDialog(item.dataset.jobId));
+        });
+      }
+    }
+
+    // 3. Upcoming jobs (next days)
+    const upcomingJobs = state.agenda
+      .filter((j) => j.date > today)
+      .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
+      .slice(0, 10);
+    const upcomingList = $('#home-upcoming-jobs');
+    if (upcomingList) {
+      if (!upcomingJobs.length) {
+        upcomingList.innerHTML = '<div class="empty">Sin trabajos planificados en próximos días.</div>';
+      } else {
+        upcomingList.innerHTML = upcomingJobs.map((j) => {
+          const op = state.operators.find((x) => x.operatorId === j.operatorId);
+          return `
+            <div class="home-job-item" data-job-id="${esc(j.id)}">
+              <time style="font-size:10px;min-width:55px;">${esc(j.date?.slice(5) || '')} ${esc(j.time || '')}</time>
+              <div class="job-main">
+                <strong>${esc(j.sa || j.client || 'TRABAJO')}</strong>
+                <span>${esc(j.client || '—')}${op ? ` (${esc(op.name)})` : ''}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+        upcomingList.querySelectorAll('[data-job-id]').forEach((item) => {
+          item.addEventListener('click', () => openJobDialog(item.dataset.jobId));
+        });
+      }
+    }
+
+    // 4. Recent photos
+    const recentPhotos = state.photos.slice(0, 6);
+    const photosList = $('#recent-photos');
+    if (photosList) {
+      if (!recentPhotos.length) {
+        photosList.innerHTML = '<div class="empty" style="grid-column:1/-1;">Sin fotos recibidas</div>';
+      } else {
+        photosList.innerHTML = recentPhotos.map((p) => `
+          <div class="home-photo-thumb" title="${esc(p.sa || p.client || 'Foto')}">
+            <img src="${esc(p.url || p.photoUrl || '')}" alt="${esc(p.sa || 'Foto')}" loading="lazy" />
+          </div>
+        `).join('');
+      }
+    }
+
+    // 5. Chat preview
+    const chatPreview = $('#home-chat-preview');
+    if (chatPreview) {
+      const recentMsgs = state.chatMessages.slice(-5);
+      if (!recentMsgs.length) {
+        chatPreview.innerHTML = '<div class="empty">Sin mensajes en el chat de equipo.</div>';
+      } else {
+        chatPreview.innerHTML = recentMsgs.map((m) => {
+          const isOffice = m.sender_id === 'office' || m.sender_role === 'office';
+          const timeStr = m.created_at ? fmtDate(new Date(m.created_at), { hour: '2-digit', minute: '2-digit' }) : '';
+          return `
+            <div class="home-chat-msg-item">
+              <span class="badge ${isOffice ? 'ok' : 'muted'}" style="font-size:8px;padding:1px 4px;align-self:flex-start;">${isOffice ? 'OFICINA' : 'TÉCNICO'}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <strong>${esc(m.sender_name)}</strong>
+                  <time style="font-size:9px;color:#666;">${esc(timeStr)}</time>
+                </div>
+                <p>${esc(m.body)}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+  }
+
+  // ==================================================
+  // AGENDA & CALENDAR
+  // ==================================================
   async function loadAgenda() {
     const from = isoDate(state.weekStart);
     const to = isoDate(addDays(state.weekStart, 6));
     const operator = state.selectedOperator === 'all' ? '' : `&operatorId=${encodeURIComponent(state.selectedOperator)}`;
-    $('#agenda-status').textContent = 'Actualizando agenda…';
-    $('#agenda-status').className = 'status-line';
+    const statusEl = $('#agenda-status');
+    if (statusEl) {
+      statusEl.textContent = 'Actualizando agenda…';
+      statusEl.className = 'status-line';
+    }
     try {
       const payload = await api(`/agenda?from=${from}&to=${to}${operator}`);
       const list = Array.isArray(payload) ? payload : payload?.agenda || payload?.items || payload?.jobs || [];
       state.agenda = list.map(normalizeJob);
-      $('#agenda-status').textContent = `${state.agenda.length} trabajo${state.agenda.length === 1 ? '' : 's'} · ${from} → ${to}`;
-      $('#agenda-status').className = 'status-line ok';
+      if (statusEl) {
+        statusEl.textContent = `${state.agenda.length} trabajo${state.agenda.length === 1 ? '' : 's'} · ${from} → ${to}`;
+        statusEl.className = 'status-line ok';
+      }
       setConnection(true);
     } catch (error) {
       state.agenda = [];
-      $('#agenda-status').textContent = `Agenda no disponible · ${error.message}`;
-      $('#agenda-status').className = 'status-line error';
+      if (statusEl) {
+        statusEl.textContent = `Agenda no disponible · ${error.message}`;
+        statusEl.className = 'status-line error';
+      }
       setConnection(false, 'API NO DISPONIBLE');
     }
     renderWeek();
+    if (state.activeView === 'home') renderHome();
   }
 
   function renderWeek() {
     const end = addDays(state.weekStart, 6);
-    $('#week-range').textContent = `${fmtDate(state.weekStart, { day: '2-digit', month: 'short' })} — ${fmtDate(end, { day: '2-digit', month: 'short', year: 'numeric' })}`.toUpperCase();
+    const rangeEl = $('#week-range');
+    if (rangeEl) {
+      rangeEl.textContent = `${fmtDate(state.weekStart, { day: '2-digit', month: 'short' })} — ${fmtDate(end, { day: '2-digit', month: 'short', year: 'numeric' })}`.toUpperCase();
+    }
     const today = isoDate(new Date());
-    $('#week-grid').innerHTML = Array.from({ length: 7 }, (_, i) => {
+    const grid = $('#week-grid');
+    if (!grid) return;
+
+    grid.innerHTML = Array.from({ length: 7 }, (_, i) => {
       const day = addDays(state.weekStart, i);
       const date = isoDate(day);
-      const jobs = state.agenda.filter((j) => j.date === date).sort((a, b) => a.time.localeCompare(b.time));
+      const jobs = state.agenda.filter((j) => j.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
       return `<div class="day-column ${date === today ? 'today' : ''}"><div class="day-head"><strong>${fmtDate(day, { weekday: 'short' }).toUpperCase()} ${day.getDate()}</strong><span>${jobs.length} trabajo${jobs.length === 1 ? '' : 's'}</span></div><div class="job-list">${jobs.map((j) => `<article class="job-card" data-job-id="${esc(j.id)}"><time>${esc(j.time || '--:--')}</time><strong>${esc(j.sa || j.client || 'TRABAJO')}</strong><span>${esc(j.client)}</span><span>${esc(j.city)}</span></article>`).join('')}</div></div>`;
     }).join('');
     $$('[data-job-id]').forEach((card) => card.addEventListener('click', () => openJobDialog(card.dataset.jobId)));
-    renderTodayMini();
-  }
-
-  function renderTodayMini() {
-    const today = isoDate(new Date());
-    const jobs = state.agenda.filter((j) => j.date === today);
-    $('#today-list').innerHTML = jobs.length ? jobs.map((j) => `<div>${esc(j.time)} · <strong>${esc(j.sa || j.client)}</strong></div>`).join('') : 'Sin trabajos cargados';
   }
 
   function selectedOperatorName() {
@@ -387,6 +793,9 @@
     return state.operators.find((x) => x.operatorId === state.selectedOperator)?.name || 'OPERARIO';
   }
 
+  // ==================================================
+  // CLOCK / FICHAJES
+  // ==================================================
   async function loadClock() {
     const operator = state.selectedOperator === 'all' ? '' : `operatorId=${encodeURIComponent(state.selectedOperator)}&`;
     try {
@@ -400,6 +809,7 @@
       }
       renderClock(payload);
       renderOperatorTabs();
+      if (state.activeView === 'home') renderHome();
     } catch {
       state.clock = [];
       renderClock(null);
@@ -408,10 +818,15 @@
 
   function renderClock(payload) {
     const summary = payload?.summary || {};
-    $('#operator-status-name').textContent = selectedOperatorName().toUpperCase();
+    const nameEl = $('#operator-status-name');
+    if (nameEl) nameEl.textContent = selectedOperatorName().toUpperCase();
+
     const currentState = summary.state || summary.status || 'SIN DATOS';
-    $('#shift-state').textContent = String(currentState).toUpperCase();
-    $('#shift-state').className = `shift-state ${String(currentState).toLowerCase().includes('trabaj') ? 'working' : String(currentState).toLowerCase().includes('paus') ? 'paused' : ''}`;
+    const shiftEl = $('#shift-state');
+    if (shiftEl) {
+      shiftEl.textContent = String(currentState).toUpperCase();
+      shiftEl.className = `shift-state ${String(currentState).toLowerCase().includes('trabaj') ? 'working' : String(currentState).toLowerCase().includes('paus') ? 'paused' : ''}`;
+    }
 
     const opPres = state.selectedOperator !== 'all' ? (state.presence[state.selectedOperator] || {}) : {};
     const isConnected = Boolean(opPres.isConnected || (opPres.lastSeenAt && (Date.now() - new Date(opPres.lastSeenAt).getTime() < 90000)));
@@ -425,11 +840,19 @@
       presElem.className = `presence-state ${isConnected ? 'connected' : 'disconnected'}`;
     }
 
-    $('#today-worked').textContent = summary.worked || summary.total || '—';
-    const rows = state.clock;
-    $('#clock-body').innerHTML = rows.length ? rows.map((r) => `<tr><td>${esc(r.date || r.fecha || '—')}</td><td>${esc(r.in || r.entrada || '—')}</td><td>${esc(r.pauses || r.pausas || '—')}</td><td>${esc(r.out || r.salida || '—')}</td><td>${esc(r.total || '—')}</td><td>${esc(r.status || r.estado || '—')}</td></tr>`).join('') : '<tr><td colspan="6">Sin registros disponibles.</td></tr>';
+    const workedEl = $('#today-worked');
+    if (workedEl) workedEl.textContent = summary.worked || summary.total || '—';
+
+    const clockBody = $('#clock-body');
+    if (clockBody) {
+      const rows = state.clock;
+      clockBody.innerHTML = rows.length ? rows.map((r) => `<tr><td>${esc(r.date || r.fecha || '—')}</td><td>${esc(r.in || r.entrada || '—')}</td><td>${esc(r.pauses || r.pausas || '—')}</td><td>${esc(r.out || r.salida || '—')}</td><td>${esc(r.total || '—')}</td><td>${esc(r.status || r.estado || '—')}</td></tr>`).join('') : '<tr><td colspan="6">Sin registros disponibles.</td></tr>';
+    }
   }
 
+  // ==================================================
+  // PHOTOS
+  // ==================================================
   async function loadPhotos() {
     const operator = state.selectedOperator === 'all' ? '' : `?operatorId=${encodeURIComponent(state.selectedOperator)}`;
     try {
@@ -439,75 +862,93 @@
       state.photos = [];
     }
     renderPhotos();
+    if (state.activeView === 'home') renderHome();
   }
 
   function renderPhotos() {
-    const query = $('#photo-search').value.trim().toLowerCase();
+    const searchEl = $('#photo-search');
+    const query = (searchEl?.value || '').trim().toLowerCase();
     const filtered = state.photos.filter((p) => !query || `${p.sa || ''} ${p.client || p.cliente || ''} ${p.note || p.nota || ''}`.toLowerCase().includes(query));
     const root = $('#photo-grid');
-    root.innerHTML = filtered.length ? filtered.map((p) => `<article class="photo-card"><img src="${esc(p.url || p.photoUrl || '')}" alt="Foto ${esc(p.sa || '')}" loading="lazy"/><div><strong>${esc(p.sa || p.client || p.cliente || 'FOTO')}</strong><span>${esc(p.client || p.cliente || '')}</span><span>${esc(p.timestamp || p.date || '')}</span></div></article>`).join('') : '<div class="empty">Sin fotos recibidas</div>';
+    if (root) {
+      root.innerHTML = filtered.length ? filtered.map((p) => `<article class="photo-card"><img src="${esc(p.url || p.photoUrl || '')}" alt="Foto ${esc(p.sa || '')}" loading="lazy"/><div><strong>${esc(p.sa || p.client || p.cliente || 'FOTO')}</strong><span>${esc(p.client || p.cliente || '')}</span><span>${esc(p.timestamp || p.date || '')}</span></div></article>`).join('') : '<div class="empty">Sin fotos recibidas</div>';
+    }
     const badge = $('#photos-badge');
-    badge.hidden = !state.photos.length;
-    badge.textContent = state.photos.length;
-    $('#recent-photos').innerHTML = state.photos.length ? state.photos.slice(0, 3).map((p) => `<div>${esc(p.sa || p.client || p.cliente || 'Foto')}</div>`).join('') : 'Sin fotos recibidas';
+    if (badge) {
+      badge.hidden = !state.photos.length;
+      badge.textContent = state.photos.length;
+    }
   }
 
+  // ==================================================
+  // JOB DIALOG
+  // ==================================================
   function openJobDialog(id = '') {
     const form = $('#job-form');
+    if (!form) return;
     form.reset();
     fillOperatorSelect();
     const job = state.agenda.find((j) => String(j.id) === String(id));
-    $('#job-dialog-title').textContent = job ? 'Editar trabajo' : 'Nuevo trabajo';
-    if (job) Object.entries(job).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value ?? ''; });
-    else {
-      form.elements.date.value = isoDate(new Date());
-      if (state.selectedOperator !== 'all') form.elements.operatorId.value = state.selectedOperator;
+    const titleEl = $('#job-dialog-title');
+    if (titleEl) titleEl.textContent = job ? 'Editar trabajo' : 'Nuevo trabajo';
+    if (job) {
+      Object.entries(job).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value ?? ''; });
+    } else {
+      if (form.elements.date) form.elements.date.value = isoDate(new Date());
+      if (state.selectedOperator !== 'all' && form.elements.operatorId) form.elements.operatorId.value = state.selectedOperator;
     }
-    $('#job-message').textContent = '';
-    $('#job-dialog').showModal();
+    const msgEl = $('#job-message');
+    if (msgEl) msgEl.textContent = '';
+    const dialog = $('#job-dialog');
+    if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
   }
 
   async function saveJob(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
-    $('#job-message').textContent = 'Guardando…';
+    const msgEl = $('#job-message');
+    if (msgEl) msgEl.textContent = 'Guardando…';
+
+    showLoading('GUARDANDO TRABAJO…');
     try {
       const editing = Boolean(data.id);
       await api('/agenda', { method: editing ? 'PUT' : 'POST', body: JSON.stringify(data) });
-      $('#job-dialog').close();
+      const dialog = $('#job-dialog');
+      if (dialog && typeof dialog.close === 'function') dialog.close();
       await loadAgenda();
+      showSuccess('TRABAJO GUARDADO');
     } catch (error) {
-      $('#job-message').textContent = `No se ha podido guardar: ${error.message}`;
+      if (msgEl) msgEl.textContent = `No se ha podido guardar: ${error.message}`;
+      showError('ERROR AL GUARDAR TRABAJO', error.message);
     }
   }
 
+  // ==================================================
+  // OPERATOR DIALOG
+  // ==================================================
   function openOperatorDialog(id = '') {
     const form = $('#operator-form');
+    if (!form) return;
     form.reset();
     const op = state.operators.find((x) => x.operatorId === id);
-    $('#operator-dialog-title').textContent = op ? 'Editar operario' : 'Nuevo operario';
+    const titleEl = $('#operator-dialog-title');
+    if (titleEl) titleEl.textContent = op ? 'Editar operario' : 'Nuevo operario';
     if (op) {
-      form.elements.operatorId.value = op.operatorId;
-      form.elements.name.value = op.name;
-      form.elements.username.value = op.username;
-      form.elements.phone.value = op.phone;
-      if (form.elements.canCreateJobs) {
-        form.elements.canCreateJobs.checked = Boolean(op.canCreateJobs);
-      }
-      if (form.elements.panasonicAccess) {
-        form.elements.panasonicAccess.checked = Boolean(op.panasonicAccess);
-      }
+      if (form.elements.operatorId) form.elements.operatorId.value = op.operatorId;
+      if (form.elements.name) form.elements.name.value = op.name;
+      if (form.elements.username) form.elements.username.value = op.username;
+      if (form.elements.phone) form.elements.phone.value = op.phone;
+      if (form.elements.canCreateJobs) form.elements.canCreateJobs.checked = Boolean(op.canCreateJobs);
+      if (form.elements.panasonicAccess) form.elements.panasonicAccess.checked = Boolean(op.panasonicAccess);
     } else {
-      if (form.elements.canCreateJobs) {
-        form.elements.canCreateJobs.checked = false;
-      }
-      if (form.elements.panasonicAccess) {
-        form.elements.panasonicAccess.checked = false;
-      }
+      if (form.elements.canCreateJobs) form.elements.canCreateJobs.checked = false;
+      if (form.elements.panasonicAccess) form.elements.panasonicAccess.checked = false;
     }
-    $('#operator-message').textContent = '';
-    $('#operator-dialog').showModal();
+    const msgEl = $('#operator-message');
+    if (msgEl) msgEl.textContent = '';
+    const dialog = $('#operator-dialog');
+    if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
   }
 
   async function saveOperator(event) {
@@ -517,12 +958,15 @@
     const id = data.operatorId;
     const canCreateJobs = Boolean(form.elements.canCreateJobs?.checked);
     const panasonicAccess = Boolean(form.elements.panasonicAccess?.checked);
+    const msgEl = $('#operator-message');
 
     if (!id && !data.password) {
-      $('#operator-message').textContent = 'Introduce una contraseña inicial.';
+      if (msgEl) msgEl.textContent = 'Introduce una contraseña inicial.';
       return;
     }
-    $('#operator-message').textContent = 'Guardando…';
+    if (msgEl) msgEl.textContent = 'Guardando…';
+
+    showLoading('GUARDANDO OPERARIO…');
     try {
       if (id) {
         await api(`/operators/${encodeURIComponent(id)}`, {
@@ -547,13 +991,19 @@
           }),
         });
       }
-      $('#operator-dialog').close();
+      const dialog = $('#operator-dialog');
+      if (dialog && typeof dialog.close === 'function') dialog.close();
       await loadOperators();
+      showSuccess('OPERARIO GUARDADO');
     } catch (error) {
-      $('#operator-message').textContent = `No se ha podido guardar: ${error.message}`;
+      if (msgEl) msgEl.textContent = `No se ha podido guardar: ${error.message}`;
+      showError('ERROR AL GUARDAR OPERARIO', error.message);
     }
   }
 
+  // ==================================================
+  // CHAT SYSTEM
+  // ==================================================
   async function loadChat(silent = false) {
     try {
       const res = await api('/chat/rooms/room_general/messages');
@@ -565,6 +1015,7 @@
         if (stream) stream.scrollTop = stream.scrollHeight;
       }
       await checkChatUnread();
+      if (state.activeView === 'home') renderHome();
     } catch (err) {
       if (!silent) {
         const stream = $('#lab-chat-messages');
@@ -617,10 +1068,15 @@
   async function sendOfficeChatMessage(event) {
     event.preventDefault();
     const input = $('#lab-chat-input');
+    const submitBtn = $('#lab-chat-submit-btn');
+    if (!input) return;
     const text = input.value.trim();
     if (!text) return;
 
     input.value = '';
+    if (submitBtn) submitBtn.disabled = true;
+    showLoading('ENVIANDO MENSAJE…');
+
     try {
       const res = await api('/chat/rooms/room_general/messages', {
         method: 'POST',
@@ -632,9 +1088,12 @@
         const stream = $('#lab-chat-messages');
         if (stream) stream.scrollTop = stream.scrollHeight;
       }
+      showSuccess('MENSAJE ENVIADO', 1200);
     } catch (err) {
-      alert(`No se ha podido enviar el mensaje: ${err.message}`);
       input.value = text;
+      showError('ERROR AL ENVIAR MENSAJE', err.message);
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
     }
   }
 
@@ -652,45 +1111,153 @@
     }
   }
 
+  // ==================================================
+  // REFRESH ORCHESTRATION
+  // ==================================================
   async function refreshAllSilently() {
     try {
       await loadOperators();
-      if (state.activeView === 'agenda') await loadAgenda();
+      if (state.activeView === 'home') {
+        await Promise.all([loadAgenda(), loadClock(), loadPhotos(), loadChat(true)]);
+      } else if (state.activeView === 'agenda') await loadAgenda();
       else if (state.activeView === 'clock') await loadClock();
       else if (state.activeView === 'photos') await loadPhotos();
       else if (state.activeView === 'chat') await loadChat(true);
       await checkChatUnread();
     } catch {
-      // ignore
+      // silent
     }
   }
 
-  async function refreshAll() {
-    await loadOperators();
-    await Promise.all([loadAgenda(), loadClock(), loadPhotos()]);
-    if (state.activeView === 'chat') await loadChat();
-    await checkChatUnread();
+  async function refreshAll(showExplicitFeedback = false) {
+    const reloadBtn = $('#reload-button');
+    if (reloadBtn && showExplicitFeedback) reloadBtn.disabled = true;
+
+    if (showExplicitFeedback) showLoading('ACTUALIZANDO DATOS…');
+
+    try {
+      await loadOperators();
+      await Promise.all([loadAgenda(), loadClock(), loadPhotos(), loadChat(true)]);
+      await checkChatUnread();
+      if (showExplicitFeedback) showSuccess('DATOS ACTUALIZADOS');
+    } catch (error) {
+      if (showExplicitFeedback) {
+        showError('NO SE HA PODIDO ACTUALIZAR', error.message, () => refreshAll(true));
+      }
+    } finally {
+      if (reloadBtn && showExplicitFeedback) reloadBtn.disabled = false;
+    }
   }
 
+  // ==================================================
+  // EVENT BINDINGS
+  // ==================================================
   function bind() {
-    $('#login-form').addEventListener('submit', handleLogin);
-    $('#logout-button').addEventListener('click', logout);
-    $('#reload-button').addEventListener('click', () => void refreshAll());
+    $('#login-form')?.addEventListener('submit', handleLogin);
+    $('#logout-button')?.addEventListener('click', logout);
+    $('#reload-button')?.addEventListener('click', () => void refreshAll(true));
+
     $$('.nav-item').forEach((b) => b.addEventListener('click', () => switchView(b.dataset.view)));
-    $('#prev-week').addEventListener('click', () => { state.weekStart = addDays(state.weekStart, -7); void loadAgenda(); });
-    $('#next-week').addEventListener('click', () => { state.weekStart = addDays(state.weekStart, 7); void loadAgenda(); });
-    $('#today-week').addEventListener('click', () => { state.weekStart = startOfWeek(new Date()); void loadAgenda(); });
-    $('#new-job-button').addEventListener('click', () => openJobDialog());
-    $('#new-operator-button').addEventListener('click', () => openOperatorDialog());
-    $('#job-form').addEventListener('submit', saveJob);
-    $('#operator-form').addEventListener('submit', saveOperator);
+
+    $('#prev-week')?.addEventListener('click', () => {
+      state.weekStart = addDays(state.weekStart, -7);
+      void loadAgenda();
+    });
+    $('#next-week')?.addEventListener('click', () => {
+      state.weekStart = addDays(state.weekStart, 7);
+      void loadAgenda();
+    });
+    $('#this-week')?.addEventListener('click', () => {
+      state.weekStart = startOfWeek(new Date());
+      void loadAgenda();
+    });
+
+    $('#new-job-button')?.addEventListener('click', () => openJobDialog());
+    $('#new-operator-button')?.addEventListener('click', () => openOperatorDialog());
+    $('#job-form')?.addEventListener('submit', saveJob);
+    $('#operator-form')?.addEventListener('submit', saveOperator);
+
     $('#lab-chat-form')?.addEventListener('submit', sendOfficeChatMessage);
     $('#refresh-chat-button')?.addEventListener('click', () => void loadChat());
-    $$('[data-close]').forEach((b) => b.addEventListener('click', () => document.getElementById(b.dataset.close).close()));
-    $$('.period').forEach((b) => b.addEventListener('click', () => { $$('.period').forEach((x) => x.classList.remove('active')); b.classList.add('active'); state.period = b.dataset.period; void loadClock(); }));
-    $('#photo-search').addEventListener('input', renderPhotos);
+
+    $$('[data-close]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const modal = document.getElementById(b.dataset.close);
+        if (modal && typeof modal.close === 'function') modal.close();
+      });
+    });
+
+    $$('[data-period]').forEach((b) => {
+      b.addEventListener('click', () => {
+        $$('[data-period]').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        state.period = b.dataset.period;
+        void loadClock();
+      });
+    });
+
+    $('#photo-search')?.addEventListener('input', renderPhotos);
+
+    // Operator drawer bindings
+    $('#drawer-close-btn')?.addEventListener('click', closeOperatorDrawer);
+    $('#drawer-backdrop')?.addEventListener('click', closeOperatorDrawer);
+
+    $('#drawer-btn-agenda')?.addEventListener('click', () => {
+      if (state.drawerOperator) {
+        state.selectedOperator = state.drawerOperator.operatorId;
+        renderOperatorTabs();
+      }
+      switchView('agenda');
+      closeOperatorDrawer();
+    });
+
+    $('#drawer-btn-clock')?.addEventListener('click', () => {
+      if (state.drawerOperator) {
+        state.selectedOperator = state.drawerOperator.operatorId;
+        renderOperatorTabs();
+      }
+      switchView('clock');
+      closeOperatorDrawer();
+    });
+
+    $('#drawer-btn-photos')?.addEventListener('click', () => {
+      if (state.drawerOperator) {
+        state.selectedOperator = state.drawerOperator.operatorId;
+        renderOperatorTabs();
+      }
+      switchView('photos');
+      closeOperatorDrawer();
+    });
+
+    $('#drawer-btn-chat')?.addEventListener('click', () => {
+      switchView('chat');
+      closeOperatorDrawer();
+    });
+
+    $('#drawer-btn-edit')?.addEventListener('click', () => {
+      if (state.drawerOperator) {
+        openOperatorDialog(state.drawerOperator.operatorId);
+      }
+      closeOperatorDrawer();
+    });
+
+    // Home view card action buttons
+    $('#home-view-operators-btn')?.addEventListener('click', () => switchView('operators'));
+    $('#home-view-agenda-btn')?.addEventListener('click', () => switchView('agenda'));
+    $('#home-view-photos-btn')?.addEventListener('click', () => switchView('photos'));
+    $('#home-view-chat-btn')?.addEventListener('click', () => switchView('chat'));
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeOperatorDrawer();
+        hideFeedback();
+      }
+    });
+
     window.addEventListener('online', () => void refreshAll());
     window.addEventListener('offline', () => setConnection(false, 'SIN RED'));
+
     setInterval(updateNow, 30000);
     setInterval(() => {
       if (sessionStorage.getItem(SESSION_KEY) && $('#app-shell') && !$('#app-shell').hidden) {
@@ -702,3 +1269,4 @@
   bind();
   if (sessionStorage.getItem(SESSION_KEY)) enterApp();
 })();
+

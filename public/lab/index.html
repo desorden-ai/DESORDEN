@@ -10,13 +10,26 @@
   <link rel="stylesheet" href="/lab/lab.css" />
 </head>
 <body>
+  <!-- Global Top Feedback Component (Loading, Success, Error) -->
+  <div id="global-feedback" class="global-feedback" hidden>
+    <div class="feedback-dots" id="feedback-dots" hidden>
+      <span>●</span><span>●</span><span>●</span>
+    </div>
+    <div class="feedback-icon" id="feedback-icon" hidden></div>
+    <div class="feedback-text-wrap">
+      <strong id="feedback-title"></strong>
+      <span id="feedback-detail"></span>
+    </div>
+    <button id="feedback-retry-btn" class="feedback-retry-btn" hidden type="button">REINTENTAR</button>
+  </div>
+
   <section class="login-screen" id="login-screen" aria-label="Acceso de oficina">
     <form class="login-card" id="login-form">
       <div class="login-brand">DESORDEN</div>
       <p>OFICINA · SAT</p>
       <label>Usuario<input id="login-user" autocomplete="username" required /></label>
       <label>Contraseña<input id="login-pass" type="password" autocomplete="current-password" required /></label>
-      <button class="primary" type="submit">ACCEDER</button>
+      <button class="primary" type="submit" id="login-submit-btn">ACCEDER</button>
       <span class="form-message" id="login-message"></span>
     </form>
   </section>
@@ -28,7 +41,8 @@
         <span class="brand-sub">OFICINA · SAT</span>
       </div>
       <nav class="nav" aria-label="Secciones">
-        <button class="nav-item active" data-view="agenda">AGENDA</button>
+        <button class="nav-item active" data-view="home">INICIO</button>
+        <button class="nav-item" data-view="agenda">AGENDA</button>
         <button class="nav-item" data-view="clock">FICHAJES</button>
         <button class="nav-item" data-view="photos">FOTOS <span id="photos-badge" class="badge" hidden>0</span></button>
         <button class="nav-item" data-view="chat">CHAT <span id="lab-chat-badge" class="badge" hidden>0</span></button>
@@ -44,8 +58,8 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <span class="eyebrow" id="view-eyebrow">PLANIFICACIÓN</span>
-          <h1 id="view-title">Agenda</h1>
+          <span class="eyebrow" id="view-eyebrow">PANEL GENERAL</span>
+          <h1 id="view-title">Inicio</h1>
         </div>
         <div class="top-actions">
           <div class="now"><strong id="now-time">--:--</strong><span id="now-date">--</span></div>
@@ -56,7 +70,82 @@
       <!-- Compact Operator Strip -->
       <div class="operator-tabs" id="operator-tabs"><button type="button" class="operator-chip active" data-operator-id="all"><div class="operator-chip-avatar"><span class="initials">ALL</span></div><div class="operator-chip-info"><strong>TODOS</strong><span>Ver todo</span></div></button></div>
 
-      <section class="view active" data-panel="agenda">
+      <!-- 1. INICIO / DASHBOARD VIEW -->
+      <section class="view active" data-panel="home">
+        <div class="home-grid">
+          <!-- Team State Card -->
+          <div class="home-card home-team-card">
+            <div class="card-head">
+              <div>
+                <span class="eyebrow">EQUIPO Y PRESENCIA</span>
+                <h3>Estado de Operarios</h3>
+              </div>
+              <button class="ghost" id="home-view-operators-btn" type="button">OPERARIOS ↗</button>
+            </div>
+            <div class="home-operators-list" id="home-operators-list">
+              <div class="empty">Cargando estado del equipo…</div>
+            </div>
+          </div>
+
+          <!-- Today Jobs Card -->
+          <div class="home-card home-today-card">
+            <div class="card-head">
+              <div>
+                <span class="eyebrow">PLANIFICACIÓN HOY</span>
+                <h3>Trabajos de Hoy</h3>
+              </div>
+              <button class="ghost" id="home-view-agenda-btn" type="button">VER AGENDA ↗</button>
+            </div>
+            <div class="today-jobs-list" id="today-list">
+              <div class="empty">Cargando trabajos de hoy…</div>
+            </div>
+          </div>
+
+          <!-- Upcoming Jobs Card -->
+          <div class="home-card home-upcoming-card">
+            <div class="card-head">
+              <div>
+                <span class="eyebrow">PRÓXIMOS TRABAJOS</span>
+                <h3>Próximos Días</h3>
+              </div>
+            </div>
+            <div class="upcoming-jobs-list" id="home-upcoming-jobs">
+              <div class="empty">Cargando próximos trabajos…</div>
+            </div>
+          </div>
+
+          <!-- Recent Photos Card -->
+          <div class="home-card home-photos-card">
+            <div class="card-head">
+              <div>
+                <span class="eyebrow">ÚLTIMAS FOTOS</span>
+                <h3>Fotos de Trabajo</h3>
+              </div>
+              <button class="ghost" id="home-view-photos-btn" type="button">VER FOTOS ↗</button>
+            </div>
+            <div class="recent-photos-list" id="recent-photos">
+              <div class="empty">Cargando fotos…</div>
+            </div>
+          </div>
+
+          <!-- Team Chat Preview Card -->
+          <div class="home-card home-chat-card">
+            <div class="card-head">
+              <div>
+                <span class="eyebrow">MENSAJES RECIENTES</span>
+                <h3>Chat de Equipo</h3>
+              </div>
+              <button class="ghost" id="home-view-chat-btn" type="button">ABRIR CHAT ↗</button>
+            </div>
+            <div class="home-chat-preview" id="home-chat-preview">
+              <div class="empty">Cargando mensajes…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. AGENDA VIEW -->
+      <section class="view" data-panel="agenda" hidden>
         <div class="toolbar">
           <div class="week-controls">
             <button class="ghost" id="prev-week" type="button">←</button>
@@ -70,6 +159,7 @@
         <div class="week-grid" id="week-grid"></div>
       </section>
 
+      <!-- 3. CLOCK / FICHAJES VIEW -->
       <section class="view" data-panel="clock" hidden>
         <div class="section-head">
           <div><span class="eyebrow">CONTROL HORARIO</span><h2>Fichajes</h2><p>Registro de jornada laboral de operarios.</p></div>
@@ -93,6 +183,7 @@
         </div>
       </section>
 
+      <!-- 4. PHOTOS VIEW -->
       <section class="view" data-panel="photos" hidden>
         <div class="section-head">
           <div>
@@ -108,6 +199,7 @@
         <div class="photo-grid" id="photo-grid"><div class="empty">Sin fotos recibidas</div></div>
       </section>
 
+      <!-- 5. CHAT VIEW -->
       <section class="view" data-panel="chat" hidden>
         <div class="section-head">
           <div>
@@ -123,11 +215,12 @@
           </div>
           <form class="lab-chat-input-form" id="lab-chat-form">
             <input id="lab-chat-input" type="text" placeholder="Escribe un mensaje al equipo desde la oficina…" maxlength="2000" autocomplete="off" />
-            <button class="primary" type="submit">ENVIAR</button>
+            <button class="primary" type="submit" id="lab-chat-submit-btn">ENVIAR</button>
           </form>
         </div>
       </section>
 
+      <!-- 6. TOOLS VIEW -->
       <section class="view" data-panel="tools" hidden>
         <div class="section-head">
           <div>
@@ -185,6 +278,7 @@
         </div>
       </section>
 
+      <!-- 7. OPERATORS VIEW -->
       <section class="view" data-panel="operators" hidden>
         <div class="section-head"><div><span class="eyebrow">EQUIPO Y ACCESOS</span><h2>Operarios</h2><p>La oficina crea usuarios, asigna contraseñas y controla sus datos.</p></div><button class="primary" id="new-operator-button" type="button">＋ NUEVO OPERARIO</button></div>
         <div class="notice">Cada operario tiene un <strong>operatorId</strong> estable. La contraseña nunca se muestra después de guardarla.</div>
@@ -193,6 +287,74 @@
     </main>
   </div>
 
+  <!-- OPERATOR LATERAL DRAWER & BACKDROP -->
+  <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+  <aside id="operator-drawer" class="operator-drawer" hidden aria-label="Panel de operario">
+    <div class="drawer-header">
+      <div class="drawer-title-wrap">
+        <span class="eyebrow">DETALLE OPERARIO</span>
+        <h3 id="drawer-operator-name">—</h3>
+      </div>
+      <button class="drawer-close" id="drawer-close-btn" type="button" title="Cerrar">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-profile-card">
+        <div class="drawer-avatar-wrap" id="drawer-avatar-wrap">
+          <div class="drawer-avatar" id="drawer-avatar"></div>
+        </div>
+        <div class="drawer-profile-info">
+          <strong id="drawer-name">—</strong>
+          <span id="drawer-username">@usuario</span>
+          <span id="drawer-phone">Tel: —</span>
+        </div>
+      </div>
+
+      <div class="drawer-status-grid">
+        <div class="drawer-status-card">
+          <span>ESTADO LABORAL</span>
+          <strong id="drawer-work-status">—</strong>
+        </div>
+        <div class="drawer-status-card">
+          <span>PRESENCIA</span>
+          <strong id="drawer-presence-status">—</strong>
+          <span id="drawer-last-seen" class="drawer-subtext">—</span>
+        </div>
+        <div class="drawer-status-card span-2">
+          <span>TOTAL TRABAJADO HOY</span>
+          <strong id="drawer-today-worked">—</strong>
+        </div>
+      </div>
+
+      <div class="drawer-permissions">
+        <span>PERMISOS</span>
+        <div class="drawer-badges" id="drawer-badges">
+          <span class="badge muted" id="drawer-badge-jobs">CREA TRABAJOS</span>
+          <span class="badge muted" id="drawer-badge-panasonic">PANASONIC</span>
+        </div>
+      </div>
+
+      <div class="drawer-actions">
+        <span class="drawer-actions-label">ACCIONES DIRECTAS</span>
+        <button class="drawer-action-btn" id="drawer-btn-agenda" type="button">
+          <span>📅</span> <strong>VER EN AGENDA</strong>
+        </button>
+        <button class="drawer-action-btn" id="drawer-btn-clock" type="button">
+          <span>⏱️</span> <strong>VER FICHAJES</strong>
+        </button>
+        <button class="drawer-action-btn" id="drawer-btn-photos" type="button">
+          <span>📁</span> <strong>VER FOTOS</strong>
+        </button>
+        <button class="drawer-action-btn" id="drawer-btn-chat" type="button">
+          <span>💬</span> <strong>CHAT EQUIPO</strong>
+        </button>
+        <button class="drawer-action-btn edit" id="drawer-btn-edit" type="button">
+          <span>✏️</span> <strong>EDITAR OPERARIO</strong>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MODALS -->
   <dialog id="job-dialog">
     <form id="job-form" class="dialog-form">
       <div class="dialog-head"><div><span class="eyebrow">AGENDA</span><h2 id="job-dialog-title">Nuevo trabajo</h2></div><button class="close" data-close="job-dialog" type="button">×</button></div>
