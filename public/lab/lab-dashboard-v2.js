@@ -303,5 +303,40 @@
     observer.observe(tabs, { childList: true, subtree: true });
   }
 
+  // Keep the selected operator stable while the "Nuevo trabajo" dialog is open.
+  // lab.js refreshes operators every 4s and rebuilds #job-operator with innerHTML,
+  // which otherwise resets the current selection to the placeholder option.
+  const jobDialog = $('#job-dialog');
+  const jobOperatorSelect = $('#job-operator');
+  let rememberedJobOperatorId = '';
+
+  if (jobOperatorSelect) {
+    jobOperatorSelect.addEventListener('change', () => {
+      rememberedJobOperatorId = jobOperatorSelect.value || '';
+    });
+
+    const optionObserver = new MutationObserver(() => {
+      if (!rememberedJobOperatorId) return;
+      const stillAvailable = [...jobOperatorSelect.options].some(
+        (option) => option.value === rememberedJobOperatorId
+      );
+      if (stillAvailable && jobOperatorSelect.value !== rememberedJobOperatorId) {
+        jobOperatorSelect.value = rememberedJobOperatorId;
+      }
+    });
+    optionObserver.observe(jobOperatorSelect, { childList: true });
+  }
+
+  if (jobDialog && jobOperatorSelect) {
+    const dialogObserver = new MutationObserver(() => {
+      if (jobDialog.hasAttribute('open')) {
+        rememberedJobOperatorId = jobOperatorSelect.value || '';
+      } else {
+        rememberedJobOperatorId = '';
+      }
+    });
+    dialogObserver.observe(jobDialog, { attributes: true, attributeFilter: ['open'] });
+  }
+
   ensurePanel();
 })();
