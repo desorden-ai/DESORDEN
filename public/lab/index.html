@@ -1,105 +1,269 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#050607" />
-  <meta name="robots" content="noindex,nofollow" />
-  <title>DESORDEN LAB · SAT</title>
-  <link rel="stylesheet" href="/lab/lab.css?v=single-agenda-1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Panel privado de oficina DESORDEN SAT">
+  <title>DESORDEN · Oficina SAT</title>
+  <link rel="stylesheet" href="/lab/lab.css">
+  <link rel="stylesheet" href="/lab/lab-operators.css">
 </head>
 <body>
-  <section id="login-screen" class="login-screen">
-    <form id="login-form" class="login-card" autocomplete="on">
-      <p class="kicker">DESORDEN</p>
-      <h1>LAB</h1>
-      <p class="muted">Agenda Panasonic · Oficina</p>
-      <label>USUARIO<input id="login-user" name="username" autocomplete="username" required /></label>
-      <label>CONTRASEÑA<input id="login-pass" name="password" type="password" autocomplete="current-password" required /></label>
-      <p id="login-message" class="form-message"></p>
-      <button id="login-submit-btn" class="primary" type="submit">ENTRAR</button>
-    </form>
-  </section>
-
-  <div id="app-shell" class="app-shell" hidden>
-    <header class="topbar">
-      <div>
-        <p class="kicker">DESORDEN LAB</p>
-        <h1 id="view-title">AGENDA</h1>
+  <div class="office-shell">
+    <aside class="sidebar" aria-label="Navegación de oficina">
+      <div class="brand-block">
+        <a href="/" class="brand" aria-label="DESORDEN">DESORDEN</a>
+        <span class="brand-sub">OFICINA · SAT</span>
       </div>
-      <div class="top-actions">
-        <span id="connection-state" class="connection">● CONECTANDO</span>
-        <button id="reload-button" class="ghost" type="button">ACTUALIZAR</button>
-        <button id="logout-button" class="ghost" type="button">SALIR</button>
-      </div>
-    </header>
 
-    <nav class="tabs" aria-label="Secciones LAB">
-      <button class="tab active" type="button" data-view="agenda">AGENDA</button>
-      <button class="tab" type="button" data-view="photos">FOTOS <span id="photos-badge" class="badge" hidden></span></button>
-    </nav>
+      <nav class="nav" aria-label="Secciones">
+        <button class="nav-item is-active" type="button" data-view="agenda">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v3M16 2v3M3 9h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg>
+          <span>Agenda</span>
+        </button>
+        <button class="nav-item" type="button" data-view="clock">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span>Fichajes</span>
+        </button>
+        <button class="nav-item" type="button" data-view="photos">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="1"/><path d="m6 17 4-4 3 3 2-2 3 3M8 9h.01"/></svg>
+          <span>Fotos</span>
+          <span class="nav-badge" id="photos-badge" hidden>0</span>
+        </button>
+        <button class="nav-item" type="button" data-view="operators">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2.5-6 6-6s6 2 6 6M14 15c2.8-.4 5 1.2 6 4"/></svg>
+          <span>Operarios</span>
+        </button>
+      </nav>
 
-    <main>
-      <section data-panel="agenda">
-        <div class="metrics">
-          <article><span>HOY</span><strong id="metric-today">0</strong></article>
-          <article><span>SEMANA</span><strong id="metric-week">0</strong></article>
-          <article><span>PENDIENTES</span><strong id="metric-pending">0</strong></article>
-          <article><span>FOTOS</span><strong id="metric-photos">0</strong></article>
+      <div class="sidebar-foot">
+        <div class="connection-line">
+          <span class="connection-dot" id="connection-dot"></span>
+          <span id="connection-label">Sin conectar</span>
         </div>
+        <span class="version">DESORDEN LAB / OFFICE v0.2</span>
+      </div>
+    </aside>
 
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="view-eyebrow">PLANIFICACIÓN</p>
+          <h1 id="view-title">Agenda</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="now" aria-label="Fecha y hora actuales">
+            <strong id="now-time">--:--</strong>
+            <span id="now-date">--</span>
+          </div>
+          <button class="icon-button" id="reload-button" type="button" aria-label="Actualizar datos" title="Actualizar datos">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.6-2.6L20 9M4 15l2.3 2.6A7 7 0 0 0 18 15"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="view is-active" id="view-agenda" data-view-panel="agenda">
         <div class="agenda-toolbar">
           <div class="week-controls">
-            <button id="prev-week" class="ghost" type="button">←</button>
-            <button id="this-week" class="ghost" type="button">ESTA SEMANA</button>
-            <button id="next-week" class="ghost" type="button">→</button>
+            <button class="ghost-button" id="prev-week" type="button" aria-label="Semana anterior">←</button>
+            <button class="ghost-button today-button" id="today-week" type="button">HOY</button>
+            <button class="ghost-button" id="next-week" type="button" aria-label="Semana siguiente">→</button>
+            <div class="week-label">
+              <strong id="week-title">SEMANA</strong>
+              <span id="week-range">—</span>
+            </div>
           </div>
-          <strong id="week-range"></strong>
-          <div class="agenda-actions">
-            <span id="agenda-status" class="muted"></span>
-            <button id="new-job-button" class="primary compact" type="button">+ NUEVO TRABAJO</button>
-          </div>
+          <button class="primary-button" id="new-job-button" type="button">
+            <span>＋</span> NUEVO TRABAJO
+          </button>
         </div>
 
-        <div id="week-grid" class="week-grid"></div>
+        <div class="operator-tabs-wrap" aria-label="Agendas por operario">
+          <div class="operator-tabs" id="operator-tabs" role="tablist" aria-label="Operarios">
+            <button class="operator-tab is-active" type="button" data-operator-id="all"><span class="operator-state-dot"></span>TODOS</button>
+          </div>
+          <button class="manage-operators-button" id="manage-operators-button" type="button">GESTIONAR OPERARIOS →</button>
+        </div>
+
+        <div class="agenda-layout">
+          <div class="agenda-main">
+            <div class="status-strip" id="agenda-status" role="status" aria-live="polite">
+              <span class="status-dot"></span>
+              <span>Panel preparado. Pendiente de pasarela segura de datos.</span>
+            </div>
+            <div class="week-grid" id="week-grid" aria-label="Agenda semanal"></div>
+          </div>
+
+          <aside class="right-rail" aria-label="Estado operativo">
+            <section class="rail-section technician-card">
+              <div class="section-heading">
+                <span>ESTADO DEL TÉCNICO</span>
+                <span class="live-dot" aria-hidden="true"></span>
+              </div>
+              <div class="technician-status">
+                <div class="avatar-placeholder" aria-hidden="true">SAT</div>
+                <div>
+                  <strong id="technician-name">TÉCNICO SAT</strong>
+                  <span class="shift-state is-unknown" id="shift-state">SIN DATOS</span>
+                </div>
+              </div>
+              <dl class="metrics compact-metrics">
+                <div><dt>Último evento</dt><dd id="last-clock-event">—</dd></div>
+                <div><dt>Jornada hoy</dt><dd id="today-worked">—</dd></div>
+              </dl>
+              <button class="text-link" type="button" data-go-view="clock">VER FICHAJES →</button>
+            </section>
+
+            <section class="rail-section">
+              <div class="section-heading"><span>HOY</span><strong id="today-count">0</strong></div>
+              <div class="today-list" id="today-list">
+                <div class="empty-mini">Sin datos sincronizados</div>
+              </div>
+            </section>
+
+            <section class="rail-section">
+              <div class="section-heading"><span>FOTOS RECIENTES</span><strong id="recent-photos-count">0</strong></div>
+              <div class="recent-photos" id="recent-photos">
+                <div class="empty-mini">Sin fotos recibidas</div>
+              </div>
+              <button class="text-link" type="button" data-go-view="photos">ABRIR BANDEJA →</button>
+            </section>
+          </aside>
+        </div>
       </section>
 
-      <section data-panel="photos" hidden>
-        <div class="photos-head">
-          <div><p class="kicker">RECIBIDAS DESDE APK</p><h2>FOTOGRAFÍAS</h2></div>
-          <input id="photo-search" class="search" placeholder="Buscar SA o nota…" />
+      <section class="view" id="view-clock" data-view-panel="clock" hidden>
+        <div class="split-header">
+          <div>
+            <p class="section-kicker">REGISTRO HORARIO</p>
+            <h2>Fichajes</h2>
+            <p>Consulta de jornada, pausas y estado actual.</p>
+          </div>
+          <div class="period-tabs" role="tablist" aria-label="Periodo de fichajes">
+            <button class="period-tab is-active" type="button" data-period="today">HOY</button>
+            <button class="period-tab" type="button" data-period="week">SEMANA</button>
+            <button class="period-tab" type="button" data-period="month">MES</button>
+          </div>
         </div>
-        <div id="photo-grid" class="photo-grid"></div>
+
+        <div class="clock-summary">
+          <article><span>ESTADO</span><strong id="clock-summary-state">SIN DATOS</strong></article>
+          <article><span>TRABAJADO</span><strong id="clock-summary-worked">—</strong></article>
+          <article><span>PAUSAS</span><strong id="clock-summary-paused">—</strong></article>
+          <article><span>ÚLTIMA MARCA</span><strong id="clock-summary-last">—</strong></article>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Fecha</th><th>Entrada</th><th>Pausas</th><th>Salida</th><th>Total</th><th>Estado</th></tr></thead>
+            <tbody id="clock-table-body">
+              <tr class="table-empty"><td colspan="6">El fichaje de la APK todavía no dispone de sincronización remota segura.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="security-note">Los fichajes no se simulan ni se copian desde el navegador. Esta vista se activará cuando SAT exponga un registro remoto auditable.</p>
+      </section>
+
+      <section class="view" id="view-photos" data-view-panel="photos" hidden>
+        <div class="split-header">
+          <div>
+            <p class="section-kicker">BANDEJA DE OFICINA</p>
+            <h2>Fotos</h2>
+            <p>Imágenes enviadas desde DESORDEN SAT, vinculadas a su trabajo cuando exista SA.</p>
+          </div>
+          <div class="filter-row">
+            <input id="photo-search" type="search" placeholder="Buscar SA, cliente o nota" autocomplete="off">
+          </div>
+        </div>
+        <div class="photo-grid" id="photo-grid">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="1"/><path d="m6 17 4-4 3 3 2-2 3 3"/></svg>
+            <strong>Sin fotos recibidas</strong>
+            <span>La bandeja queda preparada para la acción “Enviar a oficina” desde SAT.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-operators" data-view-panel="operators" hidden>
+        <div class="operator-management">
+          <div class="operator-management-head">
+            <div>
+              <p class="section-kicker">EQUIPO Y ACCESOS</p>
+              <h2>Operarios</h2>
+              <p>Cada operario dispone de su propia pestaña de agenda y credenciales individuales para acceder a su entorno.</p>
+            </div>
+            <button class="primary-button" id="new-operator-button" type="button">＋ NUEVO OPERARIO</button>
+          </div>
+
+          <div class="operator-security-note">
+            <span class="operator-security-mark" aria-hidden="true"></span>
+            <div><strong>Contraseñas no recuperables.</strong> La secretaria puede crear o sustituir una contraseña, pero el dashboard nunca debe mostrar la contraseña actual ni almacenarla en el navegador. El backend deberá conservar únicamente un hash seguro.</div>
+          </div>
+
+          <div class="operators-table-wrap">
+            <table class="operators-table">
+              <thead><tr><th>Operario</th><th>Estado</th><th>Último cambio</th><th>Agenda</th><th>Acciones</th></tr></thead>
+              <tbody id="operators-table-body">
+                <tr class="table-empty"><td colspan="5">Cargando operarios…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
     </main>
   </div>
 
-  <dialog id="job-dialog" class="job-dialog">
-    <form id="job-form" method="dialog">
+  <dialog class="job-dialog" id="job-dialog" aria-labelledby="job-dialog-title">
+    <form class="job-form" id="job-form" method="dialog">
       <div class="dialog-head">
-        <div><p class="kicker">AGENDA ÚNICA</p><h2 id="job-dialog-title">Nuevo trabajo</h2></div>
-        <button class="dialog-close" type="button" data-close="job-dialog">×</button>
+        <div><span>AGENDA</span><h2 id="job-dialog-title">Nuevo trabajo</h2></div>
+        <button class="close-button" id="close-dialog" type="button" aria-label="Cerrar">×</button>
       </div>
-      <input type="hidden" name="id" />
-      <div class="two"><label>FECHA<input type="date" name="date" /></label><label>HORA<input type="time" name="time" /></label></div>
-      <label>SA<input name="sa" placeholder="SA-00000" /></label>
-      <label>TIPO<select name="type"><option>Avería</option><option>Mantenimiento</option><option>Puesta en marcha</option></select></label>
-      <label>CLIENTE<input name="client" /></label>
-      <label>TELÉFONO<input name="phone" /></label>
-      <label>DIRECCIÓN<input name="address" /></label>
-      <label>POBLACIÓN<input name="city" /></label>
-      <label>MODELO<input name="model" /></label>
-      <div class="two">
-        <label>ESTADO<select name="state"><option>Pendiente</option><option>Aceptado</option><option>En curso</option><option>Realizado</option></select></label>
-        <label>PRIORIDAD<input name="priority" value="Normal" /></label>
+
+      <div class="form-grid">
+        <label><span>SA</span><input name="sa" placeholder="SA-00000" required></label>
+        <label><span>Tipo</span><select name="type"><option>Avería</option><option>Mantenimiento</option><option>Puesta en marcha</option><option>Otro</option></select></label>
+        <label class="span-2 operator-select-row"><span>Operario</span><select id="job-operator-select" name="operatorId" required><option value="">Selecciona operario</option></select></label>
+        <label class="span-2"><span>Cliente</span><input name="client" autocomplete="name" required></label>
+        <label><span>Teléfono</span><input name="phone" inputmode="tel" autocomplete="tel"></label>
+        <label><span>Población</span><input name="city"></label>
+        <label class="span-2"><span>Dirección</span><input name="address" autocomplete="street-address"></label>
+        <label><span>Fecha</span><input name="date" type="date" required></label>
+        <label><span>Hora</span><input name="time" type="time" required></label>
+        <label class="span-2"><span>Observaciones</span><textarea name="observations" rows="4"></textarea></label>
       </div>
-      <label>OBSERVACIONES<textarea name="observations"></textarea></label>
-      <p id="job-message" class="form-message"></p>
-      <button class="primary" type="submit">GUARDAR EN AGENDA</button>
+
+      <div class="form-status" id="form-status" role="status" aria-live="polite"></div>
+      <div class="dialog-actions">
+        <button class="ghost-button" id="cancel-dialog" type="button">CANCELAR</button>
+        <button class="primary-button" type="submit">GUARDAR EN AGENDA</button>
+      </div>
     </form>
   </dialog>
 
-  <div id="global-feedback" class="feedback" hidden><strong id="feedback-title"></strong><span id="feedback-detail"></span></div>
-  <script src="/lab/lab.js?v=single-agenda-1" defer></script>
+  <dialog class="operator-dialog" id="operator-dialog" aria-labelledby="operator-dialog-title">
+    <form class="operator-form" id="operator-form" method="dialog">
+      <div class="dialog-head">
+        <div><span>ACCESO</span><h2 id="operator-dialog-title">Nuevo operario</h2></div>
+        <button class="close-button" id="close-operator-dialog" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div class="operator-form-fields">
+        <label><span>Nombre del operario</span><input name="name" autocomplete="off" minlength="2" required></label>
+        <label><span>Contraseña</span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label><span>Repetir contraseña</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <p class="operator-form-hint">La contraseña se envía únicamente al endpoint seguro para crear o sustituir el hash. No se guarda en este navegador.</p>
+      </div>
+      <div class="operator-form-status" id="operator-form-status" role="status" aria-live="polite"></div>
+      <div class="operator-dialog-actions">
+        <button class="ghost-button" id="cancel-operator-dialog" type="button">CANCELAR</button>
+        <button class="primary-button" type="submit">GUARDAR ACCESO</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/lab/lab.js" defer></script>
+  <script src="/lab/lab-operators.js" defer></script>
 </body>
 </html>
