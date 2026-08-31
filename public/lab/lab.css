@@ -1,5 +1,5 @@
 :root {
-  --desorden-accent: #06b6d4;
+  --desorden-accent: #3B82F6;
   --bg: #000;
   --panel: #070707;
   --panel2: #0d0d0d;
@@ -947,7 +947,7 @@ dialog::backdrop {
 }
 
 .chat-avatar-initials.office {
-  background: rgba(6, 182, 212, 0.12);
+  background: rgba(59, 130, 246, 0.12);
   color: var(--accent);
 }
 
@@ -985,7 +985,7 @@ dialog::backdrop {
 }
 
 .lab-chat-bubble.office-bubble {
-  background: rgba(6, 182, 212, 0.12);
+  background: rgba(59, 130, 246, 0.12);
   border-color: rgba(59, 130, 246, 0.4);
   color: #FFFFFF;
 }
