@@ -1,4 +1,4 @@
-const SAT_API_ORIGIN = 'https://sat-api.desorden.cat';
+const SAT_API_ORIGIN = 'https://panasonic-sat-api.desorden-help-76b.workers.dev';
 
 const LAB_OPERATOR_NAME_BOOTSTRAP = `
 // LAB compatibility bootstrap. Remove once lab.js contains its own helper.
@@ -18,7 +18,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Proxy LAB and SAT API requests directly to the canonical SAT API.
+    // Proxy LAB and SAT API requests directly to the Worker origin. The custom
+    // sat-api.desorden.cat hostname is currently behind a managed challenge
+    // that can block non-browser API traffic before it reaches the Worker.
     if (
       url.pathname === '/lab/api' ||
       url.pathname.startsWith('/lab/api/') ||
