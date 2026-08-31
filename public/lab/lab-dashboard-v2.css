@@ -1,5 +1,6 @@
 :root {
-  --accent: #06b6d4;
+  --desorden-accent: #06b6d4;
+  --accent: var(--desorden-accent);
   --accent-soft: rgba(6, 182, 212, 0.12);
   --accent-line: rgba(6, 182, 212, 0.34);
   --text: #f4f7f8;
@@ -732,20 +733,20 @@ body {
 .operator-chip.state-paused .operator-chip-avatar,
 .operator-chip-avatar.state-paused,
 .operator-inline-avatar.state-paused {
-  border-color: #60a5fa;
+  border-color: var(--accent);
   box-shadow: 0 0 7px rgba(96, 165, 250, 0.26);
 }
 
 .work-status.state-paused,
 .operator-inline-metric strong.state-paused,
 .shift-state.paused {
-  color: #60a5fa;
+  color: var(--accent);
 }
 
 .badge.warn {
   background: rgba(96, 165, 250, 0.12) !important;
   border: 1px solid rgba(96, 165, 250, 0.25) !important;
-  color: #8dc0ff !important;
+  color: var(--accent) !important;
 }
 
 /* Home: wider desktop information architecture */
@@ -1018,7 +1019,7 @@ tbody tr:hover td {
 
 .chat-avatar-initials.office {
   background: #07161b;
-  color: #67d9ec;
+  color: var(--accent);
 }
 
 .lab-chat-bubble-wrap {
@@ -1039,7 +1040,7 @@ tbody tr:hover td {
 }
 
 .lab-chat-row.office .lab-chat-meta strong {
-  color: #67d9ec;
+  color: var(--accent);
 }
 
 .lab-chat-meta time {
