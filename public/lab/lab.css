@@ -1,5 +1,6 @@
 :root {
-  --desorden-accent: #3B82F6;
+  --desorden-accent: #0B1F3A;
+  --desorden-accent-visible: #1D4ED8;
   --bg: #000;
   --panel: #070707;
   --panel2: #0d0d0d;
@@ -246,7 +247,7 @@ button {
 
 .eyebrow {
   display: block;
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
   font-size: 9px;
   font-weight: 900;
   letter-spacing: .14em;
@@ -503,7 +504,7 @@ button {
 }
 
 .day-column.today .day-head strong {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 .job-list {
@@ -526,7 +527,7 @@ button {
 }
 
 .job-card time {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
   font-size: 10px;
   font-weight: 900;
 }
@@ -572,7 +573,7 @@ button {
 }
 
 .shift-state.paused {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 .rail-card dl {
@@ -810,7 +811,7 @@ dialog::backdrop {
 .checkbox-label input[type="checkbox"] {
   width: 18px !important;
   height: 18px !important;
-  accent-color: var(--accent);
+  accent-color: var(--desorden-accent-visible);
   margin: 0;
   cursor: pointer;
 }
@@ -947,8 +948,8 @@ dialog::backdrop {
 }
 
 .chat-avatar-initials.office {
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--accent);
+  background: rgba(11, 31, 58, 0.12);
+  color: var(--desorden-accent-visible);
 }
 
 .lab-chat-bubble-wrap {
@@ -985,8 +986,8 @@ dialog::backdrop {
 }
 
 .lab-chat-bubble.office-bubble {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(11, 31, 58, 0.12);
+  border-color: rgba(11, 31, 58, 0.4);
   color: #FFFFFF;
 }
 
@@ -1015,7 +1016,7 @@ dialog::backdrop {
 }
 
 .lab-chat-input-form input:focus {
-  border-color: var(--accent);
+  border-color: var(--desorden-accent-visible);
 }
 
 /* ==========================================================================
@@ -1135,7 +1136,7 @@ dialog::backdrop {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
   font-size: 13px;
   line-height: 1;
 }
@@ -1222,7 +1223,7 @@ dialog::backdrop {
 .global-feedback.state-warning {
   background: #171105;
   border-color: rgba(255, 138, 0, 0.5);
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 .login-card input.input-error {
@@ -1495,12 +1496,12 @@ dialog::backdrop {
 
 .drawer-action-btn.edit {
   border-color: rgba(255, 138, 0, 0.4);
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 .drawer-action-btn.edit:hover {
   background: rgba(255, 138, 0, 0.08);
-  border-color: var(--accent);
+  border-color: var(--desorden-accent-visible);
 }
 
 /* ==================================================
@@ -1614,7 +1615,7 @@ dialog::backdrop {
 
 .home-job-item time {
   font-weight: 900;
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
   min-width: 42px;
 }
 

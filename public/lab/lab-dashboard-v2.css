@@ -1,8 +1,9 @@
 :root {
-  --desorden-accent: #3B82F6;
+  --desorden-accent: #0B1F3A;
+  --desorden-accent-visible: #1D4ED8;
   --accent: var(--desorden-accent);
-  --accent-soft: rgba(59, 130, 246, 0.12);
-  --accent-line: rgba(59, 130, 246, 0.34);
+  --accent-soft: rgba(11, 31, 58, 0.12);
+  --accent-line: rgba(11, 31, 58, 0.34);
   --text: #f4f7f8;
   --muted: #8b949e;
 }
@@ -52,13 +53,13 @@ body {
 
 .nav-item.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.09), transparent 82%);
+  background: linear-gradient(90deg, rgba(11, 31, 58, 0.09), transparent 82%);
 }
 
 .nav-item.active::before {
   width: 3px;
   border-radius: 4px;
-  box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 14px rgba(11, 31, 58, 0.35);
 }
 
 .primary {
@@ -99,7 +100,7 @@ body {
 }
 
 .eyebrow {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
   font-size: 9px;
   font-weight: 780;
   letter-spacing: 0.12em;
@@ -157,10 +158,10 @@ body {
 }
 
 .operator-chip.active {
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(11, 31, 58, 0.08);
   border-color: var(--accent-line);
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(11, 31, 58, 0.05);
 }
 
 .operator-chip-info strong {
@@ -215,7 +216,7 @@ body {
 
 .home-job-time,
 .job-card time {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 /* The old lateral drawer is intentionally disabled. Operator detail now lives in the dashboard. */
@@ -228,7 +229,7 @@ body {
   margin: 0 0 18px;
   border: 1px solid #1f2b30;
   border-radius: 12px;
-  background: linear-gradient(145deg, rgba(59, 130, 246, 0.055), #07090a 34%, #050607 100%);
+  background: linear-gradient(145deg, rgba(11, 31, 58, 0.055), #07090a 34%, #050607 100%);
   overflow: hidden;
   animation: operatorPanelIn 0.18s ease-out;
 }
@@ -401,7 +402,7 @@ body {
 }
 
 .operator-inline-row time {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
   font-size: 11px;
   font-weight: 760;
 }
@@ -516,8 +517,8 @@ body {
   --line: #161c20;
   --line2: #232b30;
   --accent: var(--desorden-accent);
-  --accent-soft: rgba(59, 130, 246, 0.09);
-  --accent-line: rgba(59, 130, 246, 0.28);
+  --accent-soft: rgba(11, 31, 58, 0.09);
+  --accent-line: rgba(11, 31, 58, 0.28);
   --blue: var(--desorden-accent);
   --text: #f7f9fa;
   --muted: #7e8991;
@@ -537,7 +538,7 @@ body {
 }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.28);
+  background: rgba(11, 31, 58, 0.28);
   color: #fff;
 }
 
@@ -628,7 +629,7 @@ body {
 }
 
 .eyebrow {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
   font-size: 8px;
   font-weight: 760;
   letter-spacing: 0.14em;
@@ -695,7 +696,7 @@ body {
 }
 
 .search:focus {
-  border-color: var(--accent);
+  border-color: var(--desorden-accent-visible);
 }
 
 /* Operator strip: compact, no pill-card feeling */
@@ -721,7 +722,7 @@ body {
 
 .operator-chip.active {
   background: #071013;
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(11, 31, 58, 0.3);
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
@@ -733,20 +734,20 @@ body {
 .operator-chip.state-paused .operator-chip-avatar,
 .operator-chip-avatar.state-paused,
 .operator-inline-avatar.state-paused {
-  border-color: var(--accent);
+  border-color: var(--desorden-accent-visible);
   box-shadow: 0 0 7px rgba(96, 165, 250, 0.26);
 }
 
 .work-status.state-paused,
 .operator-inline-metric strong.state-paused,
 .shift-state.paused {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 .badge.warn {
   background: rgba(96, 165, 250, 0.12) !important;
   border: 1px solid rgba(96, 165, 250, 0.25) !important;
-  color: var(--accent) !important;
+  color: var(--desorden-accent-visible) !important;
 }
 
 /* Home: wider desktop information architecture */
@@ -1019,7 +1020,7 @@ tbody tr:hover td {
 
 .chat-avatar-initials.office {
   background: #07161b;
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 .lab-chat-bubble-wrap {
@@ -1040,7 +1041,7 @@ tbody tr:hover td {
 }
 
 .lab-chat-row.office .lab-chat-meta strong {
-  color: var(--accent);
+  color: var(--desorden-accent-visible);
 }
 
 .lab-chat-meta time {
@@ -1094,8 +1095,8 @@ tbody tr:hover td {
 }
 
 .lab-chat-input-form input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.08);
+  border-color: var(--desorden-accent-visible);
+  box-shadow: 0 0 0 1px rgba(11, 31, 58, 0.08);
 }
 
 .lab-chat-input-form .primary {

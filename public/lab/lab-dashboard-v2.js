@@ -82,7 +82,7 @@
   }
 
   function normalizeJobs(payload) {
-    const list = Array.isArray(payload) ? payload : payload?.jobs || payload?.items || payload?.agenda || [];
+    const list = Array.isArray(payload) ? payload : payload?.rows || payload?.jobs || payload?.items || payload?.agenda || [];
     return list.map((raw) => ({
       id: raw.id || raw.jobId || raw.eventId || raw.sa || '',
       sa: raw.sa || raw.SA || raw.workOrder || '',

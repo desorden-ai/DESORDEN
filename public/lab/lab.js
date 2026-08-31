@@ -726,7 +726,8 @@
     const operator = state.selectedOperator === 'all' ? '' : `?operatorId=${encodeURIComponent(state.selectedOperator)}`;
     try {
       const payload = await api(`/agenda${operator}`);
-      state.agenda = Array.isArray(payload) ? payload : payload?.jobs || payload?.items || [];
+      const rows = Array.isArray(payload) ? payload : payload?.rows || payload?.jobs || payload?.items || [];
+      state.agenda = rows.map(normalizeJob);
       if (status) status.textContent = `${state.agenda.length} trabajos cargados`;
     } catch {
       state.agenda = [];
